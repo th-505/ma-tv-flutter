@@ -37,7 +37,7 @@ class ProgressRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setTheme(String themeStr) async {
+  Future<bool> isDarkMode() async {\n    if (_prefs == null) await init();\n    return _themeMode != ThemeMode.light;\n  }\n\n  Future<void> setDarkMode(bool dark) async {\n    await setTheme(dark ? 'dark' : 'light');\n  }\n\n  Future<List<ContentIdentity>> getFavorites() async {\n    if (_prefs == null) await init();\n    return List.unmodifiable(_favorites);\n  }\n\n  Future<List<String>> getWatchHistory() async {\n    if (_prefs == null) await init();\n    return _prefs?.getStringList(_keyHistory) ?? const [];\n  }\n\n  Future<void> clearAllHistory() async {\n    if (_prefs == null) await init();\n    final keys = _prefs?.getKeys().where((k) => k == _keyHistory || k.startsWith('progress_')).toList() ?? const <String>[];\n    for (final key in keys) { await _prefs?.remove(key); }\n    notifyListeners();\n  }\n\n  Future<void> setTheme(String themeStr) async {
     await _prefs?.setString(_keyTheme, themeStr);
     _loadTheme();
   }
