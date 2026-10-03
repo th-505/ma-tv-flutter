@@ -35,7 +35,7 @@ class DirectStreamScraper {
       final targetUrl = 'https://$portalId.com/watch/$title';
       final html = await _flareService.resolveChallenge(targetUrl);
       if (html != null && html.contains('.m3u8')) {
-        final regex = RegExp(r'https?://[^\s"\'<>]+\.m3u8[^\s"\'<>]*');
+        final regex = RegExp(r'''https?://[^\\s\"'<>]+\\.m3u8[^\\s\"'<>]*''');
         final match = regex.firstMatch(html);
         if (match != null) {
           final streamUrl = match.group(0)!;
