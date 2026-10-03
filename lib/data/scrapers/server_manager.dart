@@ -1,5 +1,7 @@
 import '../../domain/models/content_identity.dart';
 import '../../domain/models/playback_source.dart';
+import '../../core/playback/quick_play_ranking.dart';
+import '../../core/playback/provider_health_engine.dart';
 
 class EmbedServerConfig {
   final String id;
@@ -20,6 +22,14 @@ class EmbedServerConfig {
 }
 
 class ServerManager {
+  static final ProviderHealthEngine health = ProviderHealthEngine();
+  static final Map<String, ProviderPerformanceProfile> performance = {};
+
+  static void recordPlayback(String providerId, {required bool success, required int latencyMs}) {
+    final profile = performance.putIfAbsent(providerId, () => ProviderPerformanceProfile(providerId: providerId));
+    profile.record(success: success, latencyMs: latencyMs);
+    if (success) { health.recordSuccess(providerId); } else { health.recordFailure(providerId); }
+  }
   static const List<EmbedServerConfig> globalServers = [
     EmbedServerConfig(
       id: 'vidsrc-su',
@@ -148,26 +158,20 @@ class ServerManager {
     final e = episode ?? 1;
     final id = identity.tmdbId.toString();
 
-    return globalServers.map((server) {
+    final candidates = globalServers.where((server) => health.canAttempt(server.id)).map((server) {
       final isSeries = identity.mediaType == 'series';
       final pattern = isSeries ? server.seriesPattern : server.moviePattern;
-      final url = pattern
-          .replaceAll('{id}', id)
-          .replaceAll('{s}', s.toString())
-          .replaceAll('{e}', e.toString());
-
-      return RankedSource(
-        source: PlaybackSource(
-          providerId: server.id,
-          sourceId: '${server.id}-$id',
-          url: url,
-          quality: '1080p',
-          embedUrl: url,
-        ),
-        rank: server.priority,
-        score: 100 - (server.priority * 2),
-        healthStatus: 'READY',
+      final url = pattern.replaceAll('{id}', id).replaceAll('{s}', s.toString()).replaceAll('{e}', e.toString());
+      return PlaybackSource(
+        providerId: server.id,
+        sourceId: '${server.id}-$id-$s-$e',
+        url: url,
+        quality: '1080p',
+        embedUrl: url,
+        qualityConfidence: QualityConfidence.providerDeclared,
       );
     }).toList();
+
+    return QuickPlayRanking.rank(candidates, performance);
   }
 }
