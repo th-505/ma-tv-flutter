@@ -1,0 +1,185 @@
+import 'package:flutter/material.dart';
+import '../../data/services/tmdb_service.dart';
+import '../../domain/models/content_identity.dart';
+import '../widgets/hero_banner.dart';
+import '../widgets/content_rail.dart';
+import '../widgets/poster_card.dart';
+import '../../core/theme/app_theme.dart';
+
+class HomeScreen extends StatefulWidget {
+  final ValueChanged<ContentIdentity> onSelectContent;
+  final ValueChanged<int> onNavigateTab;
+
+  const HomeScreen({
+    super.key,
+    required this.onSelectContent,
+    required this.onNavigateTab,
+  });
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final TmdbService _tmdb = TmdbService();
+  bool _loading = true;
+
+  List<ContentIdentity> _trendingMovies = [];
+  List<ContentIdentity> _trendingSeries = [];
+  List<ContentIdentity> _topRated = [];
+  List<ContentIdentity> _arabicContent = [];
+  List<ContentIdentity> _turkishContent = [];
+  List<ContentIdentity> _koreanContent = [];
+  List<ContentIdentity> _animeContent = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _loading = true);
+    try {
+      final results = await Future.wait([
+        _tmdb.getTrending(type: 'movie'),
+        _tmdb.getTrending(type: 'tv'),
+        _tmdb.getTopRatedMovies(),
+        _tmdb.getByLanguage('ar', type: 'movie'),
+        _tmdb.getByLanguage('tr', type: 'tv'),
+        _tmdb.getByLanguage('ko', type: 'tv'),
+        _tmdb.getAnime(),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _trendingMovies = results[0];
+          _trendingSeries = results[1];
+          _topRated = results[2];
+          _arabicContent = results[3];
+          _turkishContent = results[4];
+          _koreanContent = results[5];
+          _animeContent = results[6];
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.gold400),
+      );
+    }
+
+    final heroItem = _trendingMovies.isNotEmpty ? _trendingMovies.first : (_trendingSeries.isNotEmpty ? _trendingSeries.first : null);
+
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      color: AppColors.gold400,
+      backgroundColor: AppColors.darkElevated,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 40),
+        child: Column(
+          children: [
+            // Hero Section
+            if (heroItem != null)
+              HeroBanner(
+                content: heroItem,
+                onPlay: () => widget.onSelectContent(heroItem),
+                onDetails: () => widget.onSelectContent(heroItem),
+              ),
+
+            // Trending Movies Rail
+            ContentRail(
+              title: 'أفلام رائجة',
+              onSeeAll: () => widget.onNavigateTab(1), // Movies Tab
+              children: _trendingMovies.map((item) {
+                return PosterCard(
+                  identity: item,
+                  onTap: () => widget.onSelectContent(item),
+                );
+              }).toList(),
+            ),
+
+            // Trending Series Rail
+            ContentRail(
+              title: 'مسلسلات رائجة',
+              onSeeAll: () => widget.onNavigateTab(2), // Series Tab
+              children: _trendingSeries.map((item) {
+                return PosterCard(
+                  identity: item,
+                  onTap: () => widget.onSelectContent(item),
+                );
+              }).toList(),
+            ),
+
+            // Top Rated Movies
+            ContentRail(
+              title: 'الأعلى تقييماً',
+              onSeeAll: () => widget.onNavigateTab(1),
+              children: _topRated.map((item) {
+                return PosterCard(
+                  identity: item,
+                  onTap: () => widget.onSelectContent(item),
+                );
+              }).toList(),
+            ),
+
+            // Arabic Content
+            ContentRail(
+              title: 'سينما عربية',
+              onSeeAll: () => widget.onNavigateTab(1),
+              children: _arabicContent.map((item) {
+                return PosterCard(
+                  identity: item,
+                  onTap: () => widget.onSelectContent(item),
+                );
+              }).toList(),
+            ),
+
+            // Turkish Drama
+            ContentRail(
+              title: 'مسلسلات تركية',
+              onSeeAll: () => widget.onNavigateTab(2),
+              children: _turkishContent.map((item) {
+                return PosterCard(
+                  identity: item,
+                  onTap: () => widget.onSelectContent(item),
+                );
+              }).toList(),
+            ),
+
+            // Korean Drama
+            ContentRail(
+              title: 'دراما كورية',
+              onSeeAll: () => widget.onNavigateTab(2),
+              children: _koreanContent.map((item) {
+                return PosterCard(
+                  identity: item,
+                  onTap: () => widget.onSelectContent(item),
+                );
+              }).toList(),
+            ),
+
+            // Anime
+            ContentRail(
+              title: 'أنمي مترجم',
+              onSeeAll: () => widget.onNavigateTab(2),
+              children: _animeContent.map((item) {
+                return PosterCard(
+                  identity: item,
+                  onTap: () => widget.onSelectContent(item),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

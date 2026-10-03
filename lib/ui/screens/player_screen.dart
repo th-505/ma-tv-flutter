@@ -1,0 +1,357 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:video_player/video_player.dart';
+import '../../domain/models/content_identity.dart';
+import '../../domain/models/playback_source.dart';
+import '../../data/services/proxy_service.dart';
+import '../../core/theme/app_theme.dart';
+import '../widgets/custom_badge.dart';
+
+class PlayerScreen extends StatefulWidget {
+  final ContentIdentity identity;
+  final PlaybackSource source;
+  final List<RankedSource> allSources;
+  final EpisodeIdentity? episode;
+  final VoidCallback onBack;
+
+  const PlayerScreen({
+    super.key,
+    required this.identity,
+    required this.source,
+    required this.allSources,
+    this.episode,
+    required this.onBack,
+  });
+
+  @override
+  State<PlayerScreen> createState() => _PlayerScreenState();
+}
+
+class _PlayerScreenState extends State<PlayerScreen> {
+  late PlaybackSource _currentSource;
+  late int _currentServerIdx;
+  VideoPlayerController? _controller;
+  bool _isLoading = true;
+  bool _hasError = false;
+  bool _useProxy = false;
+  double _playbackSpeed = 1.0;
+  bool _showControls = true;
+
+  final List<double> _speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentSource = widget.source;
+    _currentServerIdx = widget.allSources.indexWhere((s) => s.source.sourceId == widget.source.sourceId);
+    if (_currentServerIdx < 0) _currentServerIdx = 0;
+    _initPlayer(_currentSource.url);
+  }
+
+  Future<void> _initPlayer(String streamUrl) async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    await _controller?.dispose();
+    _controller = null;
+
+    final effectiveUrl = _useProxy ? ProxyService().getProxiedStreamUrl(streamUrl) : streamUrl;
+
+    try {
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(effectiveUrl),
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      );
+
+      _controller = controller;
+      await controller.initialize();
+      await controller.setPlaybackSpeed(_playbackSpeed);
+      await controller.play();
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      }
+    }
+  }
+
+  void _switchServer(int idx) {
+    if (idx >= 0 && idx < widget.allSources.length) {
+      setState(() {
+        _currentServerIdx = idx;
+        _currentSource = widget.allSources[idx].source;
+        _useProxy = false;
+      });
+      _initPlayer(_currentSource.url);
+    }
+  }
+
+  void _retryWithProxy() {
+    setState(() => _useProxy = true);
+    _initPlayer(_currentSource.url);
+  }
+
+  void _cycleSpeed() {
+    final nextIdx = (_speeds.indexOf(_playbackSpeed) + 1) % _speeds.length;
+    final nextSpeed = _speeds[nextIdx];
+    setState(() => _playbackSpeed = nextSpeed);
+    _controller?.setPlaybackSpeed(nextSpeed);
+  }
+
+  void _showServerSwitcher() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.darkElevated,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'قائمة السيرفرات العالمية',
+                style: TextStyle(color: AppColors.gold400, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Cairo'),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: widget.allSources.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, idx) {
+                    final rs = widget.allSources[idx];
+                    final isCurrent = idx == _currentServerIdx;
+                    final pingColor = idx < 5 ? Colors.green : (idx < 15 ? Colors.amber : Colors.grey);
+                    final pingLabel = idx < 5 ? 'سريع جداً' : (idx < 15 ? 'مستقر' : 'احتياطي');
+
+                    return ListTile(
+                      tileColor: isCurrent ? AppColors.gold400.withOpacity(0.15) : Colors.white.withOpacity(0.04),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      title: Text(
+                        rs.source.providerId,
+                        style: TextStyle(fontWeight: FontWeight.bold, color: isCurrent ? AppColors.gold400 : Colors.white),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(shape: BoxShape.circle, color: pingColor),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(pingLabel, style: TextStyle(color: pingColor, fontSize: 11, fontFamily: 'Cairo')),
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _switchServer(idx);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = widget.episode != null
+        ? '${widget.identity.canonical.title} - ${widget.episode!.title}'
+        : widget.identity.canonical.title;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Video Player Core
+          Center(
+            child: _controller != null && _controller!.value.isInitialized
+                ? AspectRatio(
+                    aspectRatio: _controller!.value.aspectRatio,
+                    child: VideoPlayer(_controller!),
+                  )
+                : const SizedBox(),
+          ),
+
+          // Loading Indicator
+          if (_isLoading)
+            const Center(
+              child: CircularProgressIndicator(color: AppColors.gold400),
+            ),
+
+          // Rescue / Error Overlay
+          if (_hasError)
+            Container(
+              color: Colors.black87,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 54),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'تعذر تحميل البث المباشر من هذا السيرفر',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'قد يفرض السيرفر حظر CORS أو ترويسات مشفرة. يمكنك تشغيل وسيط الترحيل أو التبديل للسيرفر التالي.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'Cairo'),
+                  ),
+                  const SizedBox(height: 24),
+                  Wrap(
+                    spacing: 12,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _retryWithProxy,
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold400, foregroundColor: Colors.black),
+                        icon: const Icon(Icons.flash_on),
+                        label: const Text('تشغيل عبر البروكسي (Proxy Relay)', style: TextStyle(fontFamily: 'Cairo')),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => _switchServer((_currentServerIdx + 1) % widget.allSources.length),
+                        style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+                        icon: const Icon(Icons.skip_next),
+                        label: const Text('السيرفر التالي', style: TextStyle(fontFamily: 'Cairo')),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+          // Controls Overlay
+          if (!_hasError)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.black87, Colors.transparent],
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: widget.onBack,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+                      ),
+                    ),
+                    // Speed Control
+                    TextButton(
+                      onPressed: _cycleSpeed,
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.white12,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      ),
+                      child: Text(
+                        '${_playbackSpeed}x',
+                        style: const TextStyle(color: AppColors.gold400, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Server Switcher Button
+                    IconButton(
+                      icon: const Icon(Icons.layers_outlined, color: Colors.white),
+                      onPressed: _showServerSwitcher,
+                      tooltip: 'تبديل السيرفر',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Bottom Player Bar
+          if (!_hasError && _controller != null && _controller!.value.isInitialized)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Colors.black87, Colors.transparent],
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        _controller!.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _controller!.value.isPlaying ? _controller!.pause() : _controller!.play();
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    // Scrubber
+                    Expanded(
+                      child: VideoProgressIndicator(
+                        _controller!,
+                        allowScrubbing: true,
+                        colors: const VideoProgressColors(
+                          playedColor: AppColors.gold400,
+                          bufferedColor: Colors.white24,
+                          backgroundColor: Colors.white10,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      icon: const Icon(Icons.fullscreen, color: Colors.white),
+                      onPressed: () {
+                        // Fullscreen handled by platform or landscape orientation
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}

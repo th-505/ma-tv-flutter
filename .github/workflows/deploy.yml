@@ -1,0 +1,115 @@
+name: Build & Deploy MA-TV (Web to GitHub Pages, Android APK/TV, and iOS)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy-web:
+    name: Build Web & Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: matv_flutter
+        run: flutter pub get
+
+      - name: Build Web Application
+        working-directory: matv_flutter
+        run: flutter build web --release --base-href "/MA-TV/"
+
+      - name: Deploy to GitHub Pages (gh-pages)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: matv_flutter/build/web
+          publish_branch: gh-pages
+
+  build-android:
+    name: Build Android Phone & TV APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: matv_flutter
+        run: flutter pub get
+
+      - name: Build Android APK
+        working-directory: matv_flutter
+        run: flutter build apk --release
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MA-TV-Release-APK
+          path: matv_flutter/build/app/outputs/flutter-apk/app-release.apk
+
+  build-ios:
+    name: Build iOS IPA Bundle
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: matv_flutter
+        run: flutter pub get
+
+      - name: Build iOS No-Codesign
+        working-directory: matv_flutter
+        run: flutter build ios --release --no-codesign
+
+      - name: Package Payload to IPA
+        working-directory: matv_flutter
+        run: |
+          mkdir -p build/ios/iphoneos/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
+          cd build/ios/iphoneos
+          zip -r MA-TV-Unsigned.ipa Payload
+
+      - name: Upload iOS IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MA-TV-Release-IPA
+          path: matv_flutter/build/ios/iphoneos/MA-TV-Unsigned.ipa
