@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 import '../../domain/models/content_identity.dart';
 import '../../domain/models/playback_source.dart';
 import '../../data/services/proxy_service.dart';
+import '../../data/scrapers/server_manager.dart';
 import '../../core/theme/app_theme.dart';
 import '../widgets/custom_badge.dart';
 
@@ -59,6 +60,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     final effectiveUrl = _useProxy ? ProxyService().getProxiedStreamUrl(streamUrl) : streamUrl;
 
+    final stopwatch = Stopwatch()..start();
     try {
       final controller = VideoPlayerController.networkUrl(
         Uri.parse(effectiveUrl),
@@ -69,6 +71,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
       await controller.initialize();
       await controller.setPlaybackSpeed(_playbackSpeed);
       await controller.play();
+      stopwatch.stop();
+      ServerManager.recordPlayback(_currentSource.providerId, success: true, latencyMs: stopwatch.elapsedMilliseconds);
 
       if (mounted) {
         setState(() {
@@ -76,6 +80,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
         });
       }
     } catch (e) {
+      stopwatch.stop();
+      ServerManager.recordPlayback(_currentSource.providerId, success: false, latencyMs: stopwatch.elapsedMilliseconds);
       if (mounted) {
         setState(() {
           _isLoading = false;
