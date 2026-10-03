@@ -9,6 +9,7 @@ import 'ui/screens/catalog_screen.dart';
 import 'ui/screens/details_screen.dart';
 import 'ui/screens/home_screen.dart';
 import 'ui/screens/live_tv_screen.dart';
+import 'ui/screens/live_stream_player_screen.dart';
 import 'ui/screens/player_screen.dart';
 import 'ui/screens/search_screen.dart';
 import 'ui/screens/settings_screen.dart';
@@ -67,6 +68,12 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     );
   }
 
+  void _openLivePlayer(String name, String url) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => LiveStreamPlayerScreen(name: name, url: url)),
+    );
+  }
+
   void _openPlayer(
     ContentIdentity identity,
     PlaybackSource source,
@@ -95,10 +102,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           if (mounted) setState(() => _currentIndex = index);
         },
       ),
-      const CatalogScreen(initialType: 'movie'),
-      const CatalogScreen(initialType: 'tv'),
-      const LiveTvScreen(),
-      const SearchScreen(),
+      CatalogScreen(mediaType: 'movie', onSelectContent: _openDetails),
+      CatalogScreen(mediaType: 'series', onSelectContent: _openDetails),
+      LiveTvScreen(onPlayLive: _openLivePlayer),
+      SearchScreen(onSelectContent: _openDetails),
       const SettingsScreen(),
     ];
 
