@@ -69,7 +69,7 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
   Widget build(BuildContext context) {
     final progress = context.watch<ProgressRepository>();
 
-    final filtered = _channels.filter((c) {
+    final filtered = _channels.where((c) {
       if (_selectedCategory == 'favorites') {
         if (!progress.isFavChannel(c.id)) return false;
       } else if (_selectedCategory != 'all' && c.category != _selectedCategory) {
