@@ -31,6 +31,9 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Ensure Flutter Platform Scaffolding
+        run: flutter create --platforms=android,ios,web --project-name matv_flutter .
+
       - name: Install Dependencies
         run: flutter pub get
 
@@ -70,6 +73,9 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Ensure Flutter Platform Scaffolding
+        run: flutter create --platforms=android,ios,web --project-name matv_flutter .
+
       - name: Install Dependencies
         run: flutter pub get
 
@@ -95,6 +101,9 @@ jobs:
           flutter-version: '3.22.x'
           channel: 'stable'
           cache: true
+
+      - name: Ensure Flutter Platform Scaffolding
+        run: flutter create --platforms=android,ios,web --project-name matv_flutter .
 
       - name: Install Dependencies
         run: flutter pub get
