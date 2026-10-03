@@ -1,6 +1,8 @@
 name: Build & Deploy MA-TV (Web to GitHub Pages, Android APK/TV, and iOS)
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [ main, master ]
   workflow_dispatch:
