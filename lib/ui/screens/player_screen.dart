@@ -49,6 +49,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _initPlayer(_currentSource.url);
   }
 
+  bool _isDirectMediaUrl(String url) {
+    final u = url.toLowerCase().split('?').first;
+    return u.endsWith('.m3u8') || u.endsWith('.mp4') || u.endsWith('.webm') || u.endsWith('.mov');
+  }
+
   Future<void> _initPlayer(String streamUrl) async {
     setState(() {
       _isLoading = true;
@@ -57,6 +62,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     await _controller?.dispose();
     _controller = null;
+
+    if (!_isDirectMediaUrl(streamUrl)) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      }
+      return;
+    }
 
     final effectiveUrl = _useProxy ? ProxyService().getProxiedStreamUrl(streamUrl) : streamUrl;
 
@@ -223,7 +238,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'قد يفرض السيرفر حظر CORS أو ترويسات مشفرة. يمكنك تشغيل وسيط الترحيل أو التبديل للسيرفر التالي.',
+                    'هذا المصدر ليس رابط فيديو مباشرًا أو تعذر تشغيله. اختر مصدرًا مباشرًا صالحًا أو جرّب مصدرًا آخر.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'Cairo'),
                   ),
