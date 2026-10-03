@@ -111,7 +111,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
     return ResponsiveAppShell(
       currentIndex: _currentIndex,
-      onDestinationSelected: (index) => setState(() => _currentIndex = index),
+      onTabSelected: (index) => setState(() => _currentIndex = index),
       child: IndexedStack(index: _currentIndex, children: screens),
     );
   }
