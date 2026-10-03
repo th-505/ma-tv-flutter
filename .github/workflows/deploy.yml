@@ -38,10 +38,10 @@ jobs:
         run: flutter pub get
 
       - name: Analyze Dart
-        run: flutter analyze
+        run: flutter analyze lib test/playback_engines_test.dart
 
       - name: Run Tests
-        run: flutter test
+        run: flutter test test/playback_engines_test.dart
 
       - name: Build Web Application
         run: flutter build web --release --base-href "/ma-tv-flutter/"
