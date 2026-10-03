@@ -1,3 +1,5 @@
+enum QualityConfidence { unverified, providerDeclared, manifestVerified, trackVerified }
+
 class PlaybackSource {
   final String providerId;
   final String sourceId;
@@ -7,6 +9,7 @@ class PlaybackSource {
   final bool hasSubtitles;
   final String? embedUrl;
   final Map<String, String>? headers;
+  final QualityConfidence qualityConfidence;
 
   PlaybackSource({
     required this.providerId,
@@ -17,21 +20,45 @@ class PlaybackSource {
     this.hasSubtitles = false,
     this.embedUrl,
     this.headers,
+    this.qualityConfidence = QualityConfidence.providerDeclared,
   });
 }
 
 class RankedSource {
   final PlaybackSource source;
-  final int rank;
+  int rank;
   final int score;
-  final String healthStatus; // 'READY', 'DEGRADED', 'UNAVAILABLE'
+  final String healthStatus;
   final bool qualityVerified;
+  final int? latencyMs;
 
   RankedSource({
     required this.source,
     required this.rank,
     required this.score,
-    this.healthStatus = 'READY',
-    this.qualityVerified = true,
+    this.healthStatus = 'UNKNOWN',
+    this.qualityVerified = false,
+    this.latencyMs,
   });
+}
+
+class ProviderPerformanceProfile {
+  final String providerId;
+  double successRateEma;
+  double startupLatencyEma;
+  double bufferingRateEma;
+
+  ProviderPerformanceProfile({
+    required this.providerId,
+    this.successRateEma = .8,
+    this.startupLatencyEma = 1000,
+    this.bufferingRateEma = 1,
+  });
+
+  void record({required bool success, required int latencyMs, double bufferingRate = 0}) {
+    const a = .3;
+    successRateEma = successRateEma * (1 - a) + (success ? 1 : 0) * a;
+    startupLatencyEma = startupLatencyEma * (1 - a) + latencyMs * a;
+    bufferingRateEma = bufferingRateEma * (1 - a) + bufferingRate * a;
+  }
 }
