@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../data/repositories/progress_repository.dart';
 import 'package:video_player/video_player.dart';
 import '../../domain/models/content_identity.dart';
 import '../../domain/models/playback_source.dart';
@@ -37,6 +39,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _useProxy = false;
   double _playbackSpeed = 1.0;
   bool _showControls = true;
+  bool _restoredProgress = false;
 
   final List<double> _speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
 
@@ -85,6 +88,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _controller = controller;
       await controller.initialize();
       await controller.setPlaybackSpeed(_playbackSpeed);
+      if (!_restoredProgress && mounted) {
+        final saved = context.read<ProgressRepository>().getProgress(widget.identity.tmdbId);
+        if (saved > 5 && saved < controller.value.duration.inSeconds - 15) {
+          await controller.seekTo(Duration(seconds: saved.round()));
+        }
+        _restoredProgress = true;
+      }
       await controller.play();
       stopwatch.stop();
       ServerManager.recordPlayback(_currentSource.providerId, success: true, latencyMs: stopwatch.elapsedMilliseconds);
@@ -189,8 +199,24 @@ class _PlayerScreenState extends State<PlayerScreen> {
     );
   }
 
+  Future<void> _persistProgress() async {
+    final controller=_controller;
+    if(controller==null||!controller.value.isInitialized||!mounted) return;
+    await context.read<ProgressRepository>().saveProgress(
+      widget.identity.tmdbId,
+      controller.value.position.inMilliseconds/1000,
+      controller.value.duration.inMilliseconds/1000,
+    );
+  }
+
   @override
   void dispose() {
+    final controller=_controller;
+    if(controller!=null&&controller.value.isInitialized){
+      final p=controller.value.position.inMilliseconds/1000;
+      final d=controller.value.duration.inMilliseconds/1000;
+      context.read<ProgressRepository>().saveProgress(widget.identity.tmdbId,p,d);
+    }
     _controller?.dispose();
     super.dispose();
   }
