@@ -422,6 +422,40 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       );
                     }),
                   ],
+                  if (_details != null) ...[
+                    Builder(builder:(context){
+                      final images=_details!['images'] as Map<String,dynamic>?;
+                      final backdrops=(images?['backdrops'] as List<dynamic>?)??const [];
+                      if(backdrops.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment:CrossAxisAlignment.start,
+                        children:[
+                          const Text('صور من العمل',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
+                          const SizedBox(height:10),
+                          SizedBox(
+                            height:120,
+                            child:ListView.separated(
+                              scrollDirection:Axis.horizontal,
+                              itemCount:backdrops.take(12).length,
+                              separatorBuilder:(_,__)=>const SizedBox(width:10),
+                              itemBuilder:(context,index){
+                                final path=(backdrops[index] as Map<String,dynamic>)['file_path'] as String?;
+                                if(path==null) return const SizedBox.shrink();
+                                return ClipRRect(
+                                  borderRadius:BorderRadius.circular(10),
+                                  child:AspectRatio(
+                                    aspectRatio:16/9,
+                                    child:Image.network('https://image.tmdb.org/t/p/w780$path',fit:BoxFit.cover),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height:24),
+                        ],
+                      );
+                    }),
+                  ],
                   if (_recommendations.isNotEmpty) ...[
                     const Text('قد يعجبك أيضاً', style: TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
                     const SizedBox(height:12),
