@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../data/repositories/progress_repository.dart';
 import 'package:video_player/video_player.dart';
@@ -8,7 +7,6 @@ import '../../domain/models/playback_source.dart';
 import '../../data/services/proxy_service.dart';
 import '../../data/scrapers/server_manager.dart';
 import '../../core/theme/app_theme.dart';
-import '../widgets/custom_badge.dart';
 
 class PlayerScreen extends StatefulWidget {
   final ContentIdentity identity;
@@ -38,7 +36,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _hasError = false;
   bool _useProxy = false;
   double _playbackSpeed = 1.0;
-  bool _showControls = true;
   bool _restoredProgress = false;
 
   final List<double> _speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
@@ -198,16 +195,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
           ),
         );
       },
-    );
-  }
-
-  Future<void> _persistProgress() async {
-    final controller=_controller;
-    if(controller==null||!controller.value.isInitialized||!mounted) return;
-    await context.read<ProgressRepository>().saveProgress(
-      widget.identity.tmdbId,
-      controller.value.position.inMilliseconds/1000,
-      controller.value.duration.inMilliseconds/1000,
     );
   }
 
