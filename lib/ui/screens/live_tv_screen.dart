@@ -203,6 +203,8 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
                     itemBuilder: (context, idx) {
                       final ch = filtered[idx];
                       final isFav = progress.isFavChannel(ch.id);
+                      final liveModel = _asModel(ch);
+                      final best = liveModel.bestSource;
 
                       return TvFocusableWidget(
                         onSelect: () => _playBest(ch),
@@ -230,7 +232,14 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                   ),
-                                  const CustomBadge(isGold: true, child: Text('مباشر')),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if(best!=null) CustomBadge(child: Text(best.quality.toUpperCase())),
+                                      const SizedBox(width:6),
+                                      CustomBadge(isGold: best!=null, child: Text(best==null?'غير متاح':'مباشر')),
+                                    ],
+                                  ),
                                 ],
                               ),
                               Text(
@@ -242,7 +251,13 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
                               const Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  Icon(Icons.play_circle_fill, color: AppColors.gold400, size: 22),
+                                  if(best!=null) ...[
+                                    Container(width:7,height:7,decoration:const BoxDecoration(shape:BoxShape.circle,color:AppColors.success)),
+                                    const SizedBox(width:6),
+                                    Text(best.health,style:const TextStyle(fontSize:9,color:Colors.white54)),
+                                    const SizedBox(width:8),
+                                  ],
+                                  Icon(best==null?Icons.block:Icons.play_circle_fill, color:best==null?Colors.white24:AppColors.gold400, size:22),
                                 ],
                               ),
                             ],
