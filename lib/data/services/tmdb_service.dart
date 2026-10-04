@@ -30,6 +30,26 @@ class TmdbService {
     return _fetchList(url);
   }
 
+  Future<List<ContentIdentity>> getPopularMovies({int page = 1}) async {
+    final url = '$_baseUrl/movie/popular?api_key=$_apiKey&language=ar-SA&page=$page';
+    return _fetchList(url);
+  }
+
+  Future<List<ContentIdentity>> getTopRatedSeries({int page = 1}) async {
+    final url = '$_baseUrl/tv/top_rated?api_key=$_apiKey&language=ar-SA&page=$page';
+    return _fetchList(url);
+  }
+
+  Future<List<ContentIdentity>> getNowPlayingMovies({int page = 1}) async {
+    final url = '$_baseUrl/movie/now_playing?api_key=$_apiKey&language=ar-SA&page=$page';
+    return _fetchList(url);
+  }
+
+  Future<List<ContentIdentity>> getOnTheAirSeries({int page = 1}) async {
+    final url = '$_baseUrl/tv/on_the_air?api_key=$_apiKey&language=ar-SA&page=$page';
+    return _fetchList(url);
+  }
+
   Future<List<ContentIdentity>> getPopularSeries() async {
     final url = '$_baseUrl/tv/popular?api_key=$_apiKey&language=ar-SA';
     return _fetchList(url);
