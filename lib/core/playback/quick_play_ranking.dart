@@ -29,7 +29,7 @@ class QuickPlayRanking {
         qualityVerified: source.qualityConfidence == QualityConfidence.trackVerified || source.qualityConfidence == QualityConfidence.manifestVerified,
         latencyMs: p?.startupLatencyEma.round());
     }).toList()..sort((a,b)=>b.score.compareTo(a.score));
-    for (var i=0;i<ranked.length;i++) ranked[i].rank=i+1;
+    for (var i=0;i<ranked.length;i++) { ranked[i].rank=i+1; }
     return ranked;
   }
 }
