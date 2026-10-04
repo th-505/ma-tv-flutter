@@ -5,6 +5,7 @@ import 'core/theme/app_theme.dart';
 import 'data/repositories/progress_repository.dart';
 import 'domain/models/content_identity.dart';
 import 'domain/models/playback_source.dart';
+import 'domain/models/live_types.dart';
 import 'ui/screens/catalog_screen.dart';
 import 'ui/screens/details_screen.dart';
 import 'ui/screens/home_screen.dart';
@@ -68,9 +69,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     );
   }
 
-  void _openLivePlayer(String name, String url) {
+  void _openLivePlayer(String name, List<LiveSourceModel> sources) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => LiveStreamPlayerScreen(name: name, url: url)),
+      MaterialPageRoute(builder: (_) => LiveStreamPlayerScreen(name: name, sources: sources)),
     );
   }
 
