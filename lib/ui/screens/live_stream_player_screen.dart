@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/models/live_types.dart';
+import '../../core/health/live_health_engine.dart';
 
 class LiveStreamPlayerScreen extends StatefulWidget {
   final String name;
@@ -25,17 +26,28 @@ class _LiveStreamPlayerScreenState extends State<LiveStreamPlayerScreen> {
     _controller=null;
     _error=null;
     if(mounted) setState((){});
-    for(var i=start;i<widget.sources.length;i++){
-      final source=widget.sources[i];
-      if(source.health.toUpperCase()=='UNHEALTHY') continue;
+    final ranked=LiveHealthEngine.instance.rank<LiveSourceModel>(
+      widget.sources,
+      (s)=>s.sourceId,
+      (s)=>s.health,
+      (s)=>s.quality,
+    );
+    for(var i=start;i<ranked.length;i++){
+      final source=ranked[i];
+      if(!LiveHealthEngine.instance.canTry(source.sourceId)) continue;
+      final sw=Stopwatch()..start();
       try{
         final controller=VideoPlayerController.networkUrl(Uri.parse(source.url));
         await controller.initialize();
         await controller.play();
+        sw.stop();
+        LiveHealthEngine.instance.recordSuccess(source.sourceId,sw.elapsedMilliseconds);
         if(!mounted){await controller.dispose();return;}
-        setState((){_controller=controller;_sourceIndex=i;_error=null;});
+        setState((){_controller=controller;_sourceIndex=widget.sources.indexWhere((s)=>s.sourceId==source.sourceId);_error=null;});
         return;
       }catch(e){
+        sw.stop();
+        LiveHealthEngine.instance.recordFailure(source.sourceId);
         _error=e;
       }
     }
