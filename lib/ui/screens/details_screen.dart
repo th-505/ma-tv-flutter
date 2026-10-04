@@ -36,6 +36,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
   Map<String, dynamic>? _details;
   List<ContentIdentity> _recommendations = [];
   List<ContentIdentity> _similar = [];
+  List<int> _seasons = const [1];
 
   @override
   void initState() {
@@ -58,6 +59,12 @@ class _DetailsScreenState extends State<DetailsScreen> {
       _details = results[0] as Map<String, dynamic>?;
       _recommendations = results[1] as List<ContentIdentity>;
       _similar = results[2] as List<ContentIdentity>;
+      final rawSeasons = (_details?['seasons'] as List<dynamic>?) ?? const [];
+      _seasons = rawSeasons
+          .where((s) => s is Map && s['season_number'] is int && s['season_number'] > 0)
+          .map<int>((s) => s['season_number'] as int)
+          .toList();
+      if (_seasons.isEmpty) _seasons = const [1];
       _loadingDetails = false;
     });
   }
@@ -357,6 +364,25 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     const Text(
                       'الحلقات والمواسم',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+                    ),
+                    SizedBox(
+                      height: 44,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _seasons.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) {
+                          final season = _seasons[index];
+                          return ChoiceChip(
+                            label: Text('الموسم $season'),
+                            selected: _selectedSeason == season,
+                            onSelected: (_) {
+                              setState(() => _selectedSeason = season);
+                              _loadSeason(season);
+                            },
+                          );
+                        },
+                      ),
                     ),
                     const SizedBox(height: 16),
                     if (_loadingEpisodes)
