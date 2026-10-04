@@ -37,14 +37,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _useProxy = false;
   double _playbackSpeed = 1.0;
   bool _restoredProgress = false;
+  late ProgressRepository _progressRepository;
 
   final List<double> _speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
 
   @override
   void initState() {
     super.initState();
-    final prefs=context.read<ProgressRepository>();
-    _playbackSpeed=prefs.defaultPlaybackSpeed;
+    _progressRepository=context.read<ProgressRepository>();
+    _playbackSpeed=_progressRepository.defaultPlaybackSpeed;
     _currentSource = widget.source;
     _currentServerIdx = widget.allSources.indexWhere((s) => s.source.sourceId == widget.source.sourceId);
     if (_currentServerIdx < 0) _currentServerIdx = 0;
@@ -87,14 +88,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _controller = controller;
       await controller.initialize();
       await controller.setPlaybackSpeed(_playbackSpeed);
-      if (!_restoredProgress && mounted && context.read<ProgressRepository>().resumePlayback) {
-        final saved = context.read<ProgressRepository>().getProgress(widget.identity.tmdbId);
+      if (!_restoredProgress && mounted && _progressRepository.resumePlayback) {
+        final saved = _progressRepository.getProgress(widget.identity.tmdbId);
         if (saved > 5 && saved < controller.value.duration.inSeconds - 15) {
           await controller.seekTo(Duration(seconds: saved.round()));
         }
         _restoredProgress = true;
       }
-      if(context.read<ProgressRepository>().autoplay) await controller.play();
+      if(_progressRepository.autoplay) await controller.play();
       stopwatch.stop();
       ServerManager.recordPlayback(_currentSource.providerId, success: true, latencyMs: stopwatch.elapsedMilliseconds);
 
@@ -204,7 +205,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if(controller!=null&&controller.value.isInitialized){
       final p=controller.value.position.inMilliseconds/1000;
       final d=controller.value.duration.inMilliseconds/1000;
-      context.read<ProgressRepository>().saveProgress(widget.identity.tmdbId,p,d);
+      _progressRepository.saveProgress(widget.identity.tmdbId,p,d);
     }
     _controller?.dispose();
     super.dispose();
