@@ -27,6 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<ContentIdentity> _trendingMovies = [];
   List<ContentIdentity> _trendingSeries = [];
   List<ContentIdentity> _topRated = [];
+  List<ContentIdentity> _nowPlaying = [];
+  List<ContentIdentity> _onTheAir = [];
   List<ContentIdentity> _arabicContent = [];
   List<ContentIdentity> _turkishContent = [];
   List<ContentIdentity> _koreanContent = [];
@@ -45,6 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _tmdb.getTrending(type: 'movie'),
         _tmdb.getTrending(type: 'tv'),
         _tmdb.getTopRatedMovies(),
+        _tmdb.getNowPlayingMovies(),
+        _tmdb.getOnTheAirSeries(),
         _tmdb.getByLanguage('ar', type: 'movie'),
         _tmdb.getByLanguage('tr', type: 'tv'),
         _tmdb.getByLanguage('ko', type: 'tv'),
@@ -56,10 +60,12 @@ class _HomeScreenState extends State<HomeScreen> {
           _trendingMovies = results[0];
           _trendingSeries = results[1];
           _topRated = results[2];
-          _arabicContent = results[3];
-          _turkishContent = results[4];
-          _koreanContent = results[5];
-          _animeContent = results[6];
+          _nowPlaying = results[3];
+          _onTheAir = results[4];
+          _arabicContent = results[5];
+          _turkishContent = results[6];
+          _koreanContent = results[7];
+          _animeContent = results[8];
           _loading = false;
         });
       }
@@ -116,6 +122,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => widget.onSelectContent(item),
                 );
               }).toList(),
+            ),
+
+            ContentRail(
+              title: 'يعرض الآن',
+              onSeeAll: () => widget.onNavigateTab(1),
+              children: _nowPlaying.map((item) => PosterCard(identity: item, onTap: () => widget.onSelectContent(item))).toList(),
+            ),
+            ContentRail(
+              title: 'مسلسلات على الهواء',
+              onSeeAll: () => widget.onNavigateTab(2),
+              children: _onTheAir.map((item) => PosterCard(identity: item, onTap: () => widget.onSelectContent(item))).toList(),
             ),
 
             // Top Rated Movies
