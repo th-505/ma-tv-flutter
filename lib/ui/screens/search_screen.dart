@@ -21,6 +21,7 @@ class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   List<ContentIdentity> _results = [];
   bool _searching = false;
+  String _scope = 'all';
 
   void _onSearchChanged(String query) async {
     if (query.trim().isEmpty) {
@@ -29,7 +30,10 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     setState(() => _searching = true);
-    final res = await _tmdb.search(query);
+    var res = await _tmdb.search(query);
+    if (_scope != 'all') {
+      res = res.where((item) => _scope == 'tv' ? item.mediaType == 'series' : item.mediaType == 'movie').toList();
+    }
     if (mounted) {
       setState(() {
         _results = res;
@@ -63,7 +67,30 @@ class _SearchScreenState extends State<SearchScreen> {
           style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
         ),
       ),
-      body: _searching
+      body: Column(
+        children: [
+          SizedBox(
+            height: 52,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              children: [
+                for (final item in const [('all','الكل'),('movie','أفلام'),('tv','مسلسلات')])
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 8),
+                    child: ChoiceChip(
+                      label: Text(item.$2),
+                      selected: _scope == item.$1,
+                      onSelected: (_) {
+                        setState(() => _scope = item.$1);
+                        _onSearchChanged(_searchCtrl.text);
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(child: _searching
           ? const Center(child: CircularProgressIndicator(color: AppColors.gold400))
           : _results.isEmpty
               ? Center(
@@ -96,6 +123,9 @@ class _SearchScreenState extends State<SearchScreen> {
                     );
                   },
                 ),
+          ),
+        ],
+      ),
     );
   }
 }
