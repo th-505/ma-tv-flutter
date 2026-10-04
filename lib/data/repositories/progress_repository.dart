@@ -9,16 +9,39 @@ class ProgressRepository extends ChangeNotifier {
   List<ContentIdentity> _favorites=[];
   List<String> _favChannelIds=[];
   ThemeMode _themeMode=ThemeMode.dark;
+  String _preferredQuality='auto';
+  bool _autoplay=true;
+  bool _resumePlayback=true;
+  bool _liveFailover=true;
+  double _defaultPlaybackSpeed=1.0;
   List<ContentIdentity> get favorites=>List.unmodifiable(_favorites);
   List<String> get favChannelIds=>List.unmodifiable(_favChannelIds);
   ThemeMode get themeMode=>_themeMode;
+  String get preferredQuality=>_preferredQuality;
+  bool get autoplay=>_autoplay;
+  bool get resumePlayback=>_resumePlayback;
+  bool get liveFailover=>_liveFailover;
+  double get defaultPlaybackSpeed=>_defaultPlaybackSpeed;
 
-  Future<void> init() async { _prefs=await SharedPreferences.getInstance(); _loadFavorites(); _loadFavChannels(); _loadTheme(); }
+  Future<void> init() async { _prefs=await SharedPreferences.getInstance(); _loadFavorites(); _loadFavChannels(); _loadTheme(); _loadPlaybackSettings(); }
   Future<void> _ensureInit() async { if(_prefs==null) await init(); }
   void _loadTheme(){ final v=_prefs?.getString(_keyTheme)??'dark'; _themeMode=v=='light'?ThemeMode.light:v=='system'?ThemeMode.system:ThemeMode.dark; notifyListeners(); }
   Future<bool> isDarkMode() async { await _ensureInit(); return _themeMode!=ThemeMode.light; }
   Future<void> setDarkMode(bool dark)=>setTheme(dark?'dark':'light');
   Future<void> setTheme(String value) async { await _ensureInit(); await _prefs!.setString(_keyTheme,value); _loadTheme(); }
+  void _loadPlaybackSettings(){
+    _preferredQuality=_prefs?.getString('matv_preferred_quality')??'auto';
+    _autoplay=_prefs?.getBool('matv_autoplay')??true;
+    _resumePlayback=_prefs?.getBool('matv_resume_playback')??true;
+    _liveFailover=_prefs?.getBool('matv_live_failover')??true;
+    _defaultPlaybackSpeed=_prefs?.getDouble('matv_playback_speed')??1.0;
+    notifyListeners();
+  }
+  Future<void> setPreferredQuality(String v) async {await _ensureInit();_preferredQuality=v;await _prefs!.setString('matv_preferred_quality',v);notifyListeners();}
+  Future<void> setAutoplay(bool v) async {await _ensureInit();_autoplay=v;await _prefs!.setBool('matv_autoplay',v);notifyListeners();}
+  Future<void> setResumePlayback(bool v) async {await _ensureInit();_resumePlayback=v;await _prefs!.setBool('matv_resume_playback',v);notifyListeners();}
+  Future<void> setLiveFailover(bool v) async {await _ensureInit();_liveFailover=v;await _prefs!.setBool('matv_live_failover',v);notifyListeners();}
+  Future<void> setDefaultPlaybackSpeed(double v) async {await _ensureInit();_defaultPlaybackSpeed=v;await _prefs!.setDouble('matv_playback_speed',v);notifyListeners();}
   Future<List<ContentIdentity>> getFavorites() async { await _ensureInit(); return List.unmodifiable(_favorites); }
   Future<List<String>> getWatchHistory() async { await _ensureInit(); return _prefs!.getStringList(_keyHistory)??const[]; }
   Future<void> clearAllHistory() async { await _ensureInit(); final keys=_prefs!.getKeys().where((k)=>k==_keyHistory||k.startsWith('progress_')||k.startsWith('duration_')).toList(); for(final k in keys){await _prefs!.remove(k);} notifyListeners(); }
