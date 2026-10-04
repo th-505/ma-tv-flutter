@@ -130,7 +130,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, idx) {
                     final rs = sources[idx];
-                    final serverConfig = ServerManager.globalServers[idx];
+                    final serverConfig = ServerManager.globalServers.firstWhere((s) => s.id == rs.source.providerId);
                     return ListTile(
                       tileColor: Colors.white.withOpacity(0.04),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
