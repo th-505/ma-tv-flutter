@@ -154,13 +154,16 @@ class TmdbService {
   Future<Map<String, dynamic>?> getGenres(String mediaType) =>
       _fetchObject('$_baseUrl/genre/${mediaType=='tv'?'tv':'movie'}/list?api_key=$_apiKey&language=ar-SA');
 
-  Future<List<ContentIdentity>> discover(String mediaType,{int page=1,String sortBy='popularity.desc',String? language,String? genres,String? originCountry,double? minVote,int? year}) {
+  Future<List<ContentIdentity>> discover(String mediaType,{int page=1,String sortBy='popularity.desc',String? language,String? genres,String? originCountry,double? minVote,int? year,String? watchProviders,String? watchRegion,bool? includeVideo}) {
     final params=<String,String>{'api_key':_apiKey,'language':'ar-SA','page':'$page','sort_by':sortBy,'include_adult':'false'};
     if(language!=null) params['with_original_language']=language;
     if(genres!=null) params['with_genres']=genres;
     if(originCountry!=null) params['with_origin_country']=originCountry;
     if(minVote!=null) params['vote_average.gte']='$minVote';
     if(year!=null) params[mediaType=='tv'?'first_air_date_year':'primary_release_year']='$year';
+    if(watchProviders!=null) params['with_watch_providers']=watchProviders;
+    if(watchRegion!=null) params['watch_region']=watchRegion;
+    if(includeVideo!=null && mediaType!='tv') params['include_video']='$includeVideo';
     final uri=Uri.parse('$_baseUrl/discover/${mediaType=='tv'?'tv':'movie'}').replace(queryParameters:params);
     return _fetchList(uri.toString());
   }
