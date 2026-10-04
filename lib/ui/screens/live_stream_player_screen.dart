@@ -19,9 +19,10 @@ class _LiveStreamPlayerScreenState extends State<LiveStreamPlayerScreen> {
   VideoPlayerController? _controller;
   Object? _error;
   int _sourceIndex=0;
+  late ProgressRepository _progressRepository;
 
   @override
-  void initState(){super.initState();_openFrom(0);}
+  void initState(){super.initState();_progressRepository=context.read<ProgressRepository>();_openFrom(0);}
 
   Future<void> _openFrom(int start) async {
     await _controller?.dispose();
@@ -34,7 +35,7 @@ class _LiveStreamPlayerScreenState extends State<LiveStreamPlayerScreen> {
       (s)=>s.health,
       (s)=>s.quality,
     );
-    final failover=context.read<ProgressRepository>().liveFailover;
+    final failover=_progressRepository.liveFailover;
     final candidates=failover?ranked:ranked.take(1).toList();
     for(var i=start;i<candidates.length;i++){
       final source=candidates[i];
