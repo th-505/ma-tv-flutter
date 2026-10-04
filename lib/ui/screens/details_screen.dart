@@ -86,6 +86,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
       widget.content,
       season: _selectedSeason,
       episode: _selectedEpisode?.episodeNumber ?? 1,
+      preferredQuality: context.read<ProgressRepository>().preferredQuality,
     );
     if (sources.isNotEmpty) {
       widget.onPlay(widget.content, sources.first.source, sources, _selectedEpisode);
