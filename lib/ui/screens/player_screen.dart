@@ -387,6 +387,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
+                    ValueListenableBuilder<VideoPlayerValue>(
+                      valueListenable:_controller!,
+                      builder:(context,value,_){
+                        String fmt(Duration d){
+                          final h=d.inHours;
+                          final m=d.inMinutes.remainder(60).toString().padLeft(2,'0');
+                          final s=d.inSeconds.remainder(60).toString().padLeft(2,'0');
+                          return h>0?'$h:$m:$s':'$m:$s';
+                        }
+                        return Text('${fmt(value.position)} / ${fmt(value.duration)}',style:const TextStyle(color:Colors.white70,fontSize:11));
+                      },
+                    ),
+                    const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(Icons.fullscreen, color: Colors.white),
                       onPressed: () {
