@@ -87,6 +87,40 @@ class TmdbService {
   }
 
 
+
+  Future<List<ContentIdentity>> getUpcomingMovies({int page=1,String region='SA'}) =>
+      _fetchList('$_baseUrl/movie/upcoming?api_key=$_apiKey&language=ar-SA&region=$region&page=$page');
+
+  Future<List<ContentIdentity>> getAiringToday({int page=1}) =>
+      _fetchList('$_baseUrl/tv/airing_today?api_key=$_apiKey&language=ar-SA&page=$page');
+
+  Future<Map<String,dynamic>?> getConfiguration() =>
+      _fetchObject('$_baseUrl/configuration?api_key=$_apiKey');
+
+  Future<Map<String,dynamic>?> getCountries() =>
+      _fetchObject('$_baseUrl/configuration/countries?api_key=$_apiKey&language=ar-SA');
+
+  Future<Map<String,dynamic>?> getLanguages() =>
+      _fetchObject('$_baseUrl/configuration/languages?api_key=$_apiKey');
+
+  Future<Map<String,dynamic>?> getMovieWatchProviderCatalog({String region='SA',String language='ar-SA'}) =>
+      _fetchObject('$_baseUrl/watch/providers/movie?api_key=$_apiKey&watch_region=$region&language=$language');
+
+  Future<Map<String,dynamic>?> getTvWatchProviderCatalog({String region='SA',String language='ar-SA'}) =>
+      _fetchObject('$_baseUrl/watch/providers/tv?api_key=$_apiKey&watch_region=$region&language=$language');
+
+  Future<Map<String,dynamic>?> getWatchProviderRegions({String language='ar-SA'}) =>
+      _fetchObject('$_baseUrl/watch/providers/regions?api_key=$_apiKey&language=$language');
+
+  Future<Map<String,dynamic>?> getCollection(int collectionId) =>
+      _fetchObject('$_baseUrl/collection/$collectionId?api_key=$_apiKey&language=ar-SA');
+
+  Future<Map<String,dynamic>?> getMovieLists(int movieId,{int page=1}) =>
+      _fetchObject('$_baseUrl/movie/$movieId/lists?api_key=$_apiKey&language=ar-SA&page=$page');
+
+  Future<Map<String,dynamic>?> getTvLists(int seriesId,{int page=1}) =>
+      _fetchObject('$_baseUrl/tv/$seriesId/lists?api_key=$_apiKey&language=ar-SA&page=$page');
+
   Future<Map<String, dynamic>?> getMovieDetails(int id,{String append='credits,videos,images,recommendations,similar,external_ids,release_dates,watch/providers'}) =>
       _fetchObject('$_baseUrl/movie/$id?api_key=$_apiKey&language=ar-SA&append_to_response=${Uri.encodeComponent(append)}');
 
