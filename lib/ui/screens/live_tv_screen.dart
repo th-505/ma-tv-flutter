@@ -8,7 +8,7 @@ import '../widgets/custom_badge.dart';
 import '../../core/tv/tv_remote_focus.dart';
 
 class LiveTvScreen extends StatefulWidget {
-  final void Function(String name, String url) onPlayLive;
+  final void Function(String name, List<LiveSourceModel> sources) onPlayLive;
 
   const LiveTvScreen({
     super.key,
@@ -85,7 +85,7 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
 
   void _playBest(LiveChannel channel) {
     final source=_asModel(channel).bestSource;
-    if(source!=null) widget.onPlayLive(channel.name,source.url);
+    if(source!=null) widget.onPlayLive(channel.name,_asModel(channel).playableSources);
   }
 
   @override
