@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/tv/tv_remote_focus.dart';
 import '../../data/repositories/progress_repository.dart';
@@ -122,6 +123,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 24),
+
+            _buildSectionHeader('التشغيل والمشاهدة', Icons.play_circle_outline),
+            Card(
+              color: Theme.of(context).cardColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Consumer<ProgressRepository>(
+                builder:(context,prefs,_)=>
+                Column(children:[
+                  ListTile(
+                    title:const Text('الجودة المفضلة'),
+                    trailing:DropdownButton<String>(
+                      value:prefs.preferredQuality,
+                      items:const [
+                        DropdownMenuItem(value:'auto',child:Text('تلقائي')),
+                        DropdownMenuItem(value:'1080p',child:Text('1080p')),
+                        DropdownMenuItem(value:'720p',child:Text('720p')),
+                        DropdownMenuItem(value:'480p',child:Text('480p')),
+                      ],
+                      onChanged:(v){if(v!=null)prefs.setPreferredQuality(v);},
+                    ),
+                  ),
+                  SwitchListTile(title:const Text('التشغيل التلقائي'),value:prefs.autoplay,onChanged:prefs.setAutoplay),
+                  SwitchListTile(title:const Text('استئناف من آخر موضع'),value:prefs.resumePlayback,onChanged:prefs.setResumePlayback),
+                  SwitchListTile(title:const Text('التبديل التلقائي لمصدر Live عند الفشل'),value:prefs.liveFailover,onChanged:prefs.setLiveFailover),
+                  ListTile(
+                    title:const Text('سرعة التشغيل الافتراضية'),
+                    trailing:DropdownButton<double>(
+                      value:prefs.defaultPlaybackSpeed,
+                      items:const [0.75,1.0,1.25,1.5,2.0].map((v)=>DropdownMenuItem(value:v,child:Text('${v}x'))).toList(),
+                      onChanged:(v){if(v!=null)prefs.setDefaultPlaybackSpeed(v);},
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(height:24),
 
             // Diagnostic & Servers Section
             _buildSectionHeader('فحص خوادم البث والتخطي (Multi-Agent Diagnostics)', Icons.network_check),
