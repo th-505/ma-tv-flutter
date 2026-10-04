@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/models/live_channel.dart';
+import '../../domain/models/live_types.dart';
 import '../../data/repositories/progress_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../widgets/custom_badge.dart';
@@ -64,6 +65,28 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
     LiveChannel(id: 'sa-sunnah', name: 'السنة النبوية (المدينة مباشر)', country: 'sa', category: 'religious', url: 'https://shd-hls-ksa-med.erc.cdn.ooredoo.mobi/ksa/smil:sunnah.smil/playlist.m3u8'),
     LiveChannel(id: 'ae-dubaitv', name: 'تلفزيون دبي', country: 'ae', category: 'entertainment', url: 'https://dmitv.cdn.mangomolo.com/dubaitv/smil:dubaitv.smil/playlist.m3u8'),
   ];
+
+  LiveChannelModel _asModel(LiveChannel c) => LiveChannelModel(
+    channelId:c.id,
+    name:c.name,
+    logo:c.logo,
+    country:c.country,
+    category:c.category,
+    sources:[
+      LiveSourceModel(
+        providerId:'official-live',
+        sourceId:'${c.id}-primary',
+        url:c.url,
+        quality:'auto',
+        health:'HEALTHY',
+      ),
+    ],
+  );
+
+  void _playBest(LiveChannel channel) {
+    final source=_asModel(channel).bestSource;
+    if(source!=null) widget.onPlayLive(channel.name,source.url);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -182,7 +205,7 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
                       final isFav = progress.isFavChannel(ch.id);
 
                       return TvFocusableWidget(
-                        onSelect: () => widget.onPlayLive(ch.name, ch.url),
+                        onSelect: () => _playBest(ch),
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
