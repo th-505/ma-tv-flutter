@@ -32,13 +32,34 @@ class _DetailsScreenState extends State<DetailsScreen> {
   EpisodeIdentity? _selectedEpisode;
   List<EpisodeIdentity> _episodes = [];
   bool _loadingEpisodes = false;
+  bool _loadingDetails = true;
+  Map<String, dynamic>? _details;
+  List<ContentIdentity> _recommendations = [];
+  List<ContentIdentity> _similar = [];
 
   @override
   void initState() {
     super.initState();
+    _loadDetails();
     if (widget.content.mediaType == 'series') {
       _loadSeason(_selectedSeason);
     }
+  }
+
+  Future<void> _loadDetails() async {
+    final isSeries = widget.content.mediaType == 'series';
+    final results = await Future.wait<dynamic>([
+      isSeries ? _tmdb.getSeriesDetails(widget.content.tmdbId) : _tmdb.getMovieDetails(widget.content.tmdbId),
+      _tmdb.getRecommendations(widget.content.tmdbId, isSeries ? 'tv' : 'movie'),
+      _tmdb.getSimilar(widget.content.tmdbId, isSeries ? 'tv' : 'movie'),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _details = results[0] as Map<String, dynamic>?;
+      _recommendations = results[1] as List<ContentIdentity>;
+      _similar = results[2] as List<ContentIdentity>;
+      _loadingDetails = false;
+    });
   }
 
   Future<void> _loadSeason(int season) async {
