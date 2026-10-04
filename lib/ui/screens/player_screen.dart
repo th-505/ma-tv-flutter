@@ -46,6 +46,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void initState() {
     super.initState();
+    final prefs=context.read<ProgressRepository>();
+    _playbackSpeed=prefs.defaultPlaybackSpeed;
     _currentSource = widget.source;
     _currentServerIdx = widget.allSources.indexWhere((s) => s.source.sourceId == widget.source.sourceId);
     if (_currentServerIdx < 0) _currentServerIdx = 0;
@@ -88,14 +90,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _controller = controller;
       await controller.initialize();
       await controller.setPlaybackSpeed(_playbackSpeed);
-      if (!_restoredProgress && mounted) {
+      if (!_restoredProgress && mounted && context.read<ProgressRepository>().resumePlayback) {
         final saved = context.read<ProgressRepository>().getProgress(widget.identity.tmdbId);
         if (saved > 5 && saved < controller.value.duration.inSeconds - 15) {
           await controller.seekTo(Duration(seconds: saved.round()));
         }
         _restoredProgress = true;
       }
-      await controller.play();
+      if(context.read<ProgressRepository>().autoplay) await controller.play();
       stopwatch.stop();
       ServerManager.recordPlayback(_currentSource.providerId, success: true, latencyMs: stopwatch.elapsedMilliseconds);
 
