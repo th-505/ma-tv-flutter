@@ -307,6 +307,51 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   ),
                   const SizedBox(height: 32),
 
+                  if (_loadingDetails)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: LinearProgressIndicator(color: AppColors.gold400),
+                    ),
+                  if (_details != null) ...[
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (_details!['runtime'] != null) CustomBadge(child: Text('${_details!['runtime']} دقيقة')),
+                        if (_details!['status'] != null) CustomBadge(child: Text(_details!['status'].toString())),
+                        if (_details!['original_language'] != null) CustomBadge(child: Text(_details!['original_language'].toString().toUpperCase())),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  if (_recommendations.isNotEmpty) ...[
+                    const Text('قد يعجبك أيضاً', style: TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
+                    const SizedBox(height:12),
+                    SizedBox(
+                      height:210,
+                      child:ListView.separated(
+                        scrollDirection:Axis.horizontal,
+                        itemCount:_recommendations.take(12).length,
+                        separatorBuilder:(_,__)=>const SizedBox(width:10),
+                        itemBuilder:(context,index){
+                          final item=_recommendations[index];
+                          final poster=item.canonical.posterPath;
+                          return SizedBox(
+                            width:130,
+                            child:InkWell(
+                              onTap:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>DetailsScreen(content:item,onBack:()=>Navigator.of(context).pop(),onPlay:widget.onPlay))),
+                              child:Column(children:[
+                                Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(10),child:poster==null?Container(color:AppColors.darkElevated):Image.network('https://image.tmdb.org/t/p/w342$poster',fit:BoxFit.cover))),
+                                const SizedBox(height:6),
+                                Text(item.canonical.title,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontFamily:'Cairo',fontSize:12)),
+                              ]),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height:24),
+                  ],
                   // Series Episodes Section
                   if (c.mediaType == 'series') ...[
                     const Text(
