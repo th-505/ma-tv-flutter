@@ -45,7 +45,6 @@ class AppTheme {
       primary: AppColors.gold400,
       secondary: AppColors.gold300,
       surface: AppColors.darkElevated,
-      background: AppColors.darkBg,
       error: AppColors.error,
     ),
     appBarTheme: const AppBarTheme(
@@ -76,7 +75,6 @@ class AppTheme {
       primary: AppColors.gold600,
       secondary: AppColors.gold500,
       surface: AppColors.lightElevated,
-      background: AppColors.lightBg,
       error: AppColors.error,
     ),
     appBarTheme: const AppBarTheme(
