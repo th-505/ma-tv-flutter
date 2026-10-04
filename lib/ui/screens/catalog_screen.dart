@@ -26,7 +26,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
   final List<Map<String, String>> _filters = [
     {'id': 'trending', 'label': 'الرائج الآن'},
+    {'id': 'popular', 'label': 'الأكثر شعبية'},
     {'id': 'top_rated', 'label': 'الأعلى تقييماً'},
+    {'id': 'current', 'label': 'يعرض الآن'},
     {'id': 'arabic', 'label': 'عربي'},
     {'id': 'turkish', 'label': 'تركي'},
     {'id': 'korean', 'label': 'كوري'},
@@ -51,8 +53,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
       case 'trending':
         res = await _tmdb.getTrending(type: isMovie ? 'movie' : 'tv');
         break;
+      case 'popular':
+        res = isMovie ? await _tmdb.getPopularMovies() : await _tmdb.getPopularSeries();
+        break;
       case 'top_rated':
-        res = isMovie ? await _tmdb.getTopRatedMovies() : await _tmdb.getPopularSeries();
+        res = isMovie ? await _tmdb.getTopRatedMovies() : await _tmdb.getTopRatedSeries();
+        break;
+      case 'current':
+        res = isMovie ? await _tmdb.getNowPlayingMovies() : await _tmdb.getOnTheAirSeries();
         break;
       case 'arabic':
         res = await _tmdb.getByLanguage('ar', type: isMovie ? 'movie' : 'tv');
