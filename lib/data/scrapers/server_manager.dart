@@ -153,7 +153,7 @@ class ServerManager {
     ),
   ];
 
-  static List<RankedSource> buildSources(ContentIdentity identity, {int? season, int? episode}) {
+  static List<RankedSource> buildSources(ContentIdentity identity, {int? season, int? episode, String preferredQuality = 'auto'}) {
     final s = season ?? 1;
     final e = episode ?? 1;
     final id = identity.tmdbId.toString();
@@ -172,6 +172,30 @@ class ServerManager {
       );
     }).toList();
 
-    return QuickPlayRanking.rank(candidates, performance);
+    final ranked=QuickPlayRanking.rank(candidates, performance);
+    if(preferredQuality=='auto') return ranked;
+    int distance(String quality){
+      int value(String q){
+        final v=q.toLowerCase();
+        if(v.contains('2160')||v.contains('4k')) return 2160;
+        if(v.contains('1080')) return 1080;
+        if(v.contains('720')) return 720;
+        if(v.contains('480')) return 480;
+        if(v.contains('360')) return 360;
+        return 0;
+      }
+      return (value(quality)-value(preferredQuality)).abs();
+    }
+    ranked.sort((a,b){
+      final healthA=a.healthStatus.toUpperCase()=='UNHEALTHY'?1:0;
+      final healthB=b.healthStatus.toUpperCase()=='UNHEALTHY'?1:0;
+      final health=healthA.compareTo(healthB);
+      if(health!=0)return health;
+      final quality=distance(a.source.quality).compareTo(distance(b.source.quality));
+      if(quality!=0)return quality;
+      return b.score.compareTo(a.score);
+    });
+    for(var i=0;i<ranked.length;i++){ranked[i].rank=i+1;}
+    return ranked;
   }
 }
