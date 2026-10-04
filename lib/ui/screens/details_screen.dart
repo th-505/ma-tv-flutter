@@ -331,6 +331,97 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     ),
                     const SizedBox(height: 24),
                   ],
+                  if (_details != null) ...[
+                    Builder(builder: (context) {
+                      final credits = _details!['credits'] as Map<String, dynamic>?;
+                      final cast = (credits?['cast'] as List<dynamic>?) ?? const [];
+                      if (cast.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('طاقم التمثيل', style: TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
+                          const SizedBox(height:12),
+                          SizedBox(
+                            height:150,
+                            child:ListView.separated(
+                              scrollDirection:Axis.horizontal,
+                              itemCount:cast.take(15).length,
+                              separatorBuilder:(_,__)=>const SizedBox(width:10),
+                              itemBuilder:(context,index){
+                                final person=cast[index] as Map<String,dynamic>;
+                                final profile=person['profile_path'] as String?;
+                                return SizedBox(
+                                  width:90,
+                                  child:Column(children:[
+                                    CircleAvatar(
+                                      radius:38,
+                                      backgroundColor:AppColors.darkElevated,
+                                      backgroundImage:profile==null?null:NetworkImage('https://image.tmdb.org/t/p/w185$profile'),
+                                      child:profile==null?const Icon(Icons.person):null,
+                                    ),
+                                    const SizedBox(height:6),
+                                    Text((person['name']??'').toString(),maxLines:1,overflow:TextOverflow.ellipsis,textAlign:TextAlign.center,style:const TextStyle(fontFamily:'Cairo',fontSize:11)),
+                                    Text((person['character']??'').toString(),maxLines:1,overflow:TextOverflow.ellipsis,textAlign:TextAlign.center,style:const TextStyle(fontFamily:'Cairo',fontSize:9,color:Colors.white54)),
+                                  ]),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height:20),
+                        ],
+                      );
+                    }),
+                    Builder(builder: (context) {
+                      final videos = _details!['videos'] as Map<String,dynamic>?;
+                      final items = (videos?['results'] as List<dynamic>?) ?? const [];
+                      final trailers = items.where((v) => v is Map && v['site']=='YouTube' && (v['type']=='Trailer'||v['type']=='Teaser')).take(6).toList();
+                      if (trailers.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('الإعلانات والمقاطع',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
+                          const SizedBox(height:10),
+                          Wrap(
+                            spacing:8,
+                            runSpacing:8,
+                            children:trailers.map((v)=>Chip(
+                              avatar:const Icon(Icons.play_circle_outline,size:18),
+                              label:Text((v['name']??'Trailer').toString(),overflow:TextOverflow.ellipsis),
+                            )).toList(),
+                          ),
+                          const SizedBox(height:20),
+                        ],
+                      );
+                    }),
+                    Builder(builder: (context) {
+                      final providers = _details!['watch/providers'] as Map<String,dynamic>?;
+                      final results = providers?['results'] as Map<String,dynamic>?;
+                      final sa = results?['SA'] as Map<String,dynamic>?;
+                      final available = <dynamic>[
+                        ...((sa?['flatrate'] as List<dynamic>?)??const []),
+                        ...((sa?['rent'] as List<dynamic>?)??const []),
+                        ...((sa?['buy'] as List<dynamic>?)??const []),
+                      ];
+                      final seen=<int>{};
+                      final unique=available.where((p)=>p is Map<String,dynamic> && seen.add((p['provider_id'] as num?)?.toInt()??-1)).toList();
+                      if(unique.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment:CrossAxisAlignment.start,
+                        children:[
+                          const Text('متاح رسميًا في السعودية',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
+                          const SizedBox(height:10),
+                          Wrap(
+                            spacing:8,
+                            runSpacing:8,
+                            children:unique.map((p)=>CustomBadge(child:Text((p['provider_name']??'').toString()))).toList(),
+                          ),
+                          const SizedBox(height:6),
+                          const Text('بيانات التوفر مقدمة عبر TMDB / JustWatch',style:TextStyle(fontSize:10,color:Colors.white54,fontFamily:'Cairo')),
+                          const SizedBox(height:24),
+                        ],
+                      );
+                    }),
+                  ],
                   if (_recommendations.isNotEmpty) ...[
                     const Text('قد يعجبك أيضاً', style: TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
                     const SizedBox(height:12),
