@@ -86,6 +86,70 @@ class TmdbService {
     return [];
   }
 
+
+  Future<Map<String, dynamic>?> getMovieDetails(int id,{String append='credits,videos,images,recommendations,similar,external_ids,release_dates,watch/providers'}) =>
+      _fetchObject('$_baseUrl/movie/$id?api_key=$_apiKey&language=ar-SA&append_to_response=${Uri.encodeComponent(append)}');
+
+  Future<Map<String, dynamic>?> getSeriesDetails(int id,{String append='credits,videos,images,recommendations,similar,external_ids,content_ratings,watch/providers'}) =>
+      _fetchObject('$_baseUrl/tv/$id?api_key=$_apiKey&language=ar-SA&append_to_response=${Uri.encodeComponent(append)}');
+
+  Future<Map<String, dynamic>?> getSeasonDetails(int seriesId,int season,{String append='credits,external_ids,images,videos,watch/providers'}) =>
+      _fetchObject('$_baseUrl/tv/$seriesId/season/$season?api_key=$_apiKey&language=ar-SA&append_to_response=${Uri.encodeComponent(append)}');
+
+  Future<Map<String, dynamic>?> getEpisodeDetails(int seriesId,int season,int episode,{String append='credits,external_ids,images,videos'}) =>
+      _fetchObject('$_baseUrl/tv/$seriesId/season/$season/episode/$episode?api_key=$_apiKey&language=ar-SA&append_to_response=${Uri.encodeComponent(append)}');
+
+  Future<List<ContentIdentity>> getRecommendations(int id,String mediaType,{int page=1}) =>
+      _fetchList('$_baseUrl/${mediaType=='tv'?'tv':'movie'}/$id/recommendations?api_key=$_apiKey&language=ar-SA&page=$page');
+
+  Future<List<ContentIdentity>> getSimilar(int id,String mediaType,{int page=1}) =>
+      _fetchList('$_baseUrl/${mediaType=='tv'?'tv':'movie'}/$id/similar?api_key=$_apiKey&language=ar-SA&page=$page');
+
+  Future<Map<String, dynamic>?> getWatchProviders(int id,String mediaType) =>
+      _fetchObject('$_baseUrl/${mediaType=='tv'?'tv':'movie'}/$id/watch/providers?api_key=$_apiKey');
+
+  Future<Map<String, dynamic>?> getCredits(int id,String mediaType) =>
+      _fetchObject('$_baseUrl/${mediaType=='tv'?'tv':'movie'}/$id/credits?api_key=$_apiKey&language=ar-SA');
+
+  Future<Map<String, dynamic>?> getVideos(int id,String mediaType) =>
+      _fetchObject('$_baseUrl/${mediaType=='tv'?'tv':'movie'}/$id/videos?api_key=$_apiKey&language=ar-SA&include_video_language=ar,en,null');
+
+  Future<Map<String, dynamic>?> getImages(int id,String mediaType) =>
+      _fetchObject('$_baseUrl/${mediaType=='tv'?'tv':'movie'}/$id/images?api_key=$_apiKey&include_image_language=ar,en,null');
+
+  Future<Map<String, dynamic>?> getGenres(String mediaType) =>
+      _fetchObject('$_baseUrl/genre/${mediaType=='tv'?'tv':'movie'}/list?api_key=$_apiKey&language=ar-SA');
+
+  Future<List<ContentIdentity>> discover(String mediaType,{int page=1,String sortBy='popularity.desc',String? language,String? genres,String? originCountry,double? minVote,int? year}) {
+    final params=<String,String>{'api_key':_apiKey,'language':'ar-SA','page':'$page','sort_by':sortBy,'include_adult':'false'};
+    if(language!=null) params['with_original_language']=language;
+    if(genres!=null) params['with_genres']=genres;
+    if(originCountry!=null) params['with_origin_country']=originCountry;
+    if(minVote!=null) params['vote_average.gte']='$minVote';
+    if(year!=null) params[mediaType=='tv'?'first_air_date_year':'primary_release_year']='$year';
+    final uri=Uri.parse('$_baseUrl/discover/${mediaType=='tv'?'tv':'movie'}').replace(queryParameters:params);
+    return _fetchList(uri.toString());
+  }
+
+  Future<Map<String, dynamic>?> findByExternalId(String externalId,{String source='imdb_id'}) =>
+      _fetchObject('$_baseUrl/find/${Uri.encodeComponent(externalId)}?api_key=$_apiKey&external_source=${Uri.encodeComponent(source)}&language=ar-SA');
+
+  Future<List<dynamic>> searchPeople(String query,{int page=1}) async {
+    final data=await _fetchObject('$_baseUrl/search/person?api_key=$_apiKey&language=ar-SA&page=$page&query=${Uri.encodeComponent(query)}&include_adult=false');
+    return (data?['results'] as List<dynamic>?)??const [];
+  }
+
+  Future<Map<String, dynamic>?> getPersonDetails(int id) =>
+      _fetchObject('$_baseUrl/person/$id?api_key=$_apiKey&language=ar-SA&append_to_response=combined_credits,images,external_ids');
+
+  Future<Map<String, dynamic>?> _fetchObject(String url) async {
+    try {
+      final res=await http.get(Uri.parse(url)).timeout(const Duration(seconds:8));
+      if(res.statusCode==200) return jsonDecode(res.body) as Map<String,dynamic>;
+    } catch (_) {}
+    return null;
+  }
+
   Future<List<ContentIdentity>> _fetchList(String url) async {
     try {
       final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
