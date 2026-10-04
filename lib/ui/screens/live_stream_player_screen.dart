@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:provider/provider.dart';
+import '../../data/repositories/progress_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/models/live_types.dart';
 import '../../core/health/live_health_engine.dart';
@@ -32,8 +34,10 @@ class _LiveStreamPlayerScreenState extends State<LiveStreamPlayerScreen> {
       (s)=>s.health,
       (s)=>s.quality,
     );
-    for(var i=start;i<ranked.length;i++){
-      final source=ranked[i];
+    final failover=context.read<ProgressRepository>().liveFailover;
+    final candidates=failover?ranked:ranked.take(1).toList();
+    for(var i=start;i<candidates.length;i++){
+      final source=candidates[i];
       if(!LiveHealthEngine.instance.canTry(source.sourceId)) continue;
       final sw=Stopwatch()..start();
       try{
