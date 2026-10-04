@@ -23,6 +23,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
   bool _loading = true;
   List<ContentIdentity> _items = [];
   String _selectedFilter = 'trending';
+  String? _language;
+  double? _minVote;
+  int? _year;
+  String _sortBy = 'popularity.desc';
 
   final List<Map<String, String>> _filters = [
     {'id': 'trending', 'label': 'الرائج الآن'},
@@ -38,6 +42,23 @@ class _CatalogScreenState extends State<CatalogScreen> {
   void initState() {
     super.initState();
     _fetchCategory(_selectedFilter);
+  }
+
+  Future<void> _applyDiscover() async {
+    setState(() => _loading = true);
+    final res = await _tmdb.discover(
+      widget.mediaType == 'movie' ? 'movie' : 'tv',
+      language: _language,
+      minVote: _minVote,
+      year: _year,
+      sortBy: _sortBy,
+    );
+    if (!mounted) return;
+    setState(() {
+      _selectedFilter = 'discover';
+      _items = res;
+      _loading = false;
+    });
   }
 
   Future<void> _fetchCategory(String filter) async {
@@ -117,6 +138,67 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 );
               },
             ),
+          ),
+
+          ExpansionTile(
+            title: const Text('تصفية متقدمة من TMDB', style: TextStyle(fontFamily:'Cairo',fontWeight:FontWeight.bold)),
+            childrenPadding: const EdgeInsets.fromLTRB(16,0,16,12),
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  DropdownButton<String?>(
+                    value: _language,
+                    hint: const Text('اللغة'),
+                    items: const [
+                      DropdownMenuItem(value:null,child:Text('كل اللغات')),
+                      DropdownMenuItem(value:'ar',child:Text('العربية')),
+                      DropdownMenuItem(value:'en',child:Text('الإنجليزية')),
+                      DropdownMenuItem(value:'tr',child:Text('التركية')),
+                      DropdownMenuItem(value:'ko',child:Text('الكورية')),
+                      DropdownMenuItem(value:'ja',child:Text('اليابانية')),
+                      DropdownMenuItem(value:'hi',child:Text('الهندية')),
+                    ],
+                    onChanged:(v)=>setState(()=>_language=v),
+                  ),
+                  DropdownButton<double?>(
+                    value:_minVote,
+                    hint:const Text('التقييم'),
+                    items:const [
+                      DropdownMenuItem(value:null,child:Text('أي تقييم')),
+                      DropdownMenuItem(value:6,child:Text('6+')),
+                      DropdownMenuItem(value:7,child:Text('7+')),
+                      DropdownMenuItem(value:8,child:Text('8+')),
+                    ],
+                    onChanged:(v)=>setState(()=>_minVote=v),
+                  ),
+                  DropdownButton<String>(
+                    value:_sortBy,
+                    items:const [
+                      DropdownMenuItem(value:'popularity.desc',child:Text('الأكثر شعبية')),
+                      DropdownMenuItem(value:'vote_average.desc',child:Text('الأعلى تقييماً')),
+                      DropdownMenuItem(value:'primary_release_date.desc',child:Text('الأحدث')),
+                    ],
+                    onChanged:(v)=>setState(()=>_sortBy=v??'popularity.desc'),
+                  ),
+                  SizedBox(
+                    width:110,
+                    child:TextField(
+                      keyboardType:TextInputType.number,
+                      decoration:const InputDecoration(labelText:'السنة',isDense:true),
+                      onChanged:(v)=>_year=int.tryParse(v),
+                    ),
+                  ),
+                  FilledButton.icon(
+                    onPressed:_applyDiscover,
+                    icon:const Icon(Icons.tune),
+                    label:const Text('تطبيق'),
+                  ),
+                ],
+              ),
+            ],
           ),
 
           // Content Grid
