@@ -8,7 +8,6 @@ import '../../data/scrapers/server_manager.dart';
 import '../../data/repositories/progress_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../widgets/custom_badge.dart';
-import '../../core/tv/tv_remote_focus.dart';
 
 class DetailsScreen extends StatefulWidget {
   final ContentIdentity content;
