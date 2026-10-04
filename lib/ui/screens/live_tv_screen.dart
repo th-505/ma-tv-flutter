@@ -248,7 +248,7 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'Cairo'),
                               ),
-                              const Row(
+                              Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   if(best!=null) ...[
