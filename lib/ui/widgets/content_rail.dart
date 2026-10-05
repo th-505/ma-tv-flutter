@@ -61,12 +61,12 @@ class ContentRail extends StatelessWidget {
 
         // Horizontal List
         SizedBox(
-          height: 215,
+          height: MediaQuery.sizeOf(context).width >= 900 ? 230 : 215,
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             scrollDirection: Axis.horizontal,
             itemCount: children.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            separatorBuilder: (_, __) => SizedBox(width: MediaQuery.sizeOf(context).width >= 900 ? 16 : 12),
             itemBuilder: (_, index) => children[index],
           ),
         ),
