@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -25,9 +26,36 @@ void main() {
         progress.init();
         return progress;
       },
-      child: const MATVApp(),
+      child: kIsWeb ? const WebBootProbe() : const MATVApp(),
     ),
   );
+}
+
+
+class WebBootProbe extends StatelessWidget {
+  const WebBootProbe({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: const Color(0xFF0A0A0B),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.check_circle_outline, color: Color(0xFFD4AF37), size: 72),
+              SizedBox(height: 20),
+              Text('MA-TV WEB OK', style: TextStyle(color: Color(0xFFD4AF37), fontSize: 28, fontWeight: FontWeight.bold)),
+              SizedBox(height: 10),
+              Text('Flutter engine started successfully', style: TextStyle(color: Colors.white70, fontSize: 14)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class MATVApp extends StatelessWidget {
