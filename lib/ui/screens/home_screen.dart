@@ -123,7 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
       notificationPredicate: (notification) => notification.depth == 0,
       color: AppColors.gold400,
       backgroundColor: AppColors.darkElevated,
-      child: SingleChildScrollView(
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
         primary: true,
         physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -241,6 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
