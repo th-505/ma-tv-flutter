@@ -158,10 +158,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
       backgroundColor: AppColors.darkElevated,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.72,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
             children: [
               const Text(
                 'قائمة السيرفرات العالمية',
@@ -206,6 +208,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 ),
               ),
             ],
+              ),
+            ),
           ),
         );
       },
@@ -262,7 +266,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 54),
                   const SizedBox(height: 16),
                   const Text(
-                    'تعذر تحميل البث المباشر من هذا السيرفر',
+                    'تعذر تشغيل هذا المصدر',
                     style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
                   ),
                   const SizedBox(height: 8),
