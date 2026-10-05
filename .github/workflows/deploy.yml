@@ -80,3 +80,18 @@ jobs:
             -H "X-GitHub-Api-Version: 2026-03-10" \
             "https://api.github.com/repos/${{ github.repository }}/pages/builds"
 
+      - name: Verify Public GitHub Pages
+        run: |
+          sleep 20
+          google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=1280,720 --virtual-time-budget=15000 \
+            --screenshot=pages-live-smoke.png \
+            "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/?ci=${{ github.sha }}"
+          test -s pages-live-smoke.png
+
+      - name: Upload Public Pages Screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-live-smoke
+          path: pages-live-smoke.png
+          retention-days: 3
+
