@@ -23,7 +23,21 @@ class ProgressRepository extends ChangeNotifier {
   bool get liveFailover=>_liveFailover;
   double get defaultPlaybackSpeed=>_defaultPlaybackSpeed;
 
-  Future<void> init() async { _prefs=await SharedPreferences.getInstance(); _loadFavorites(); _loadFavChannels(); _loadTheme(); _loadPlaybackSettings(); }
+  Future<void> init() async {
+    try {
+      _prefs = await SharedPreferences.getInstance();
+      _loadFavorites();
+      _loadFavChannels();
+      _loadTheme();
+      _loadPlaybackSettings();
+    } catch (_) {
+      _prefs = null;
+      _favorites = [];
+      _favChannelIds = [];
+      _themeMode = ThemeMode.dark;
+      notifyListeners();
+    }
+  }
   Future<void> _ensureInit() async { if(_prefs==null) await init(); }
   void _loadTheme(){ final v=_prefs?.getString(_keyTheme)??'dark'; _themeMode=v=='light'?ThemeMode.light:v=='system'?ThemeMode.system:ThemeMode.dark; notifyListeners(); }
   Future<bool> isDarkMode() async { await _ensureInit(); return _themeMode!=ThemeMode.light; }
@@ -46,7 +60,18 @@ class ProgressRepository extends ChangeNotifier {
   Future<List<String>> getWatchHistory() async { await _ensureInit(); return _prefs!.getStringList(_keyHistory)??const[]; }
   Future<void> clearAllHistory() async { await _ensureInit(); final keys=_prefs!.getKeys().where((k)=>k==_keyHistory||k.startsWith('progress_')||k.startsWith('duration_')).toList(); for(final k in keys){await _prefs!.remove(k);} notifyListeners(); }
 
-  void _loadFavorites(){ final raw=_prefs?.getStringList(_keyFavorites)??[]; _favorites=raw.map((x)=>ContentIdentity.fromJson(jsonDecode(x))).toList(); notifyListeners(); }
+  void _loadFavorites(){
+    final raw=_prefs?.getStringList(_keyFavorites)??[];
+    final parsed=<ContentIdentity>[];
+    for(final item in raw){
+      try {
+        final decoded=jsonDecode(item);
+        if(decoded is Map<String,dynamic>) parsed.add(ContentIdentity.fromJson(decoded));
+      } catch (_) {}
+    }
+    _favorites=parsed;
+    notifyListeners();
+  }
   bool isFavorite(int id)=>_favorites.any((f)=>f.tmdbId==id);
   Future<void> toggleFavorite(ContentIdentity identity) async { await _ensureInit(); if(isFavorite(identity.tmdbId)){_favorites.removeWhere((f)=>f.tmdbId==identity.tmdbId);}else{_favorites.add(identity);} final raw=_favorites.map((f)=>jsonEncode({'id':f.tmdbId,'media_type':f.mediaType,'title':f.canonical.title,'overview':f.canonical.overview,'poster_path':f.canonical.posterPath,'backdrop_path':f.canonical.backdropPath,'vote_average':f.canonical.voteAverage})).toList(); await _prefs!.setStringList(_keyFavorites,raw); notifyListeners(); }
   void _loadFavChannels(){_favChannelIds=_prefs?.getStringList(_keyFavChannels)??[]; notifyListeners();}
