@@ -171,17 +171,18 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, idx) {
                     final rs = sources[idx];
-                    final serverConfig = ServerManager.globalServers.firstWhere((s) => s.id == rs.source.providerId);
+                    final matching = ServerManager.globalServers.where((s) => s.id == rs.source.providerId);
+                    final serverConfig = matching.isEmpty ? null : matching.first;
                     return ListTile(
                       tileColor: Colors.white.withValues(alpha: 0.04),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       title: Text(
-                        serverConfig.name,
+                        serverConfig?.name ?? rs.source.providerId,
                         style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Cairo', fontSize: 13),
                       ),
                       trailing: CustomBadge(
                         isGold: idx < 3,
-                        child: Text(serverConfig.badge),
+                        child: Text(serverConfig?.badge ?? rs.source.quality),
                       ),
                       onTap: () {
                         Navigator.pop(context);
