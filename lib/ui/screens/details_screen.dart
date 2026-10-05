@@ -208,12 +208,17 @@ class _DetailsScreenState extends State<DetailsScreen> {
         ? 'https://image.tmdb.org/t/p/original${c.canonical.backdropPath}'
         : null;
 
+    final webWide = MediaQuery.sizeOf(context).width >= 900;
+
     return Scaffold(
-      body: CustomScrollView(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1600),
+          child: CustomScrollView(
         slivers: [
           // Collapsible Backdrop App Bar
           SliverAppBar(
-            expandedHeight: 320,
+            expandedHeight: webWide ? 460 : 320,
             pinned: true,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -638,6 +643,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }
