@@ -164,7 +164,9 @@ class ResponsiveAppShell extends StatelessWidget {
             top: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
           ),
         ),
-        child: NavigationBar(
+        child: SafeArea(
+          top: false,
+          child: NavigationBar(
           selectedIndex: currentIndex,
           onDestinationSelected: onTabSelected,
           backgroundColor: Colors.transparent,
@@ -176,6 +178,7 @@ class ResponsiveAppShell extends StatelessWidget {
               label: tab.label,
             );
           }).toList(),
+          ),
         ),
       ),
     );
