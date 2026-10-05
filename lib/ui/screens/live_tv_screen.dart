@@ -170,7 +170,7 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
                 return FilterChip(
                   label: Text(cat['label']!),
                   selected: isSelected,
-                  selectedColor: AppColors.gold400.withOpacity(0.2),
+                  selectedColor: AppColors.gold400.withValues(alpha: 0.2),
                   checkmarkColor: AppColors.gold400,
                   backgroundColor: Colors.transparent,
                   labelStyle: TextStyle(
