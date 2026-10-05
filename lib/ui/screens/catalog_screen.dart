@@ -210,6 +210,20 @@ class _CatalogScreenState extends State<CatalogScreen> {
                       onChanged:(v)=>_year=int.tryParse(v),
                     ),
                   ),
+                  OutlinedButton.icon(
+                    onPressed:(){
+                      setState((){
+                        _language=null;
+                        _minVote=null;
+                        _year=null;
+                        _sortBy='popularity.desc';
+                        _yearController.clear();
+                      });
+                      _fetchCategory('trending');
+                    },
+                    icon:const Icon(Icons.restart_alt),
+                    label:const Text('إعادة ضبط'),
+                  ),
                   FilledButton.icon(
                     onPressed:_applyDiscover,
                     icon:const Icon(Icons.tune),
