@@ -241,11 +241,11 @@ class _CatalogScreenState extends State<CatalogScreen> {
                       )
                     : GridView.builder(
                         padding: const EdgeInsets.all(16),
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 160,
+                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: MediaQuery.sizeOf(context).width >= 900 ? 190 : 160,
                           childAspectRatio: 0.65,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
+                          crossAxisSpacing: MediaQuery.sizeOf(context).width >= 900 ? 18 : 12,
+                          mainAxisSpacing: MediaQuery.sizeOf(context).width >= 900 ? 18 : 12,
                         ),
                         itemCount: _items.length,
                         itemBuilder: (context, index) {
