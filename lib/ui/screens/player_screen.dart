@@ -155,6 +155,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppColors.darkElevated,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
@@ -282,7 +283,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     runSpacing: 12,
                     children: [
                       ElevatedButton.icon(
-                        onPressed: _retryWithProxy,
+                        onPressed: _isDirectMediaUrl(_currentSource.url) ? _retryWithProxy : null,
                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold400, foregroundColor: Colors.black),
                         icon: const Icon(Icons.flash_on),
                         label: const Text('تشغيل عبر البروكسي (Proxy Relay)', style: TextStyle(fontFamily: 'Cairo')),
