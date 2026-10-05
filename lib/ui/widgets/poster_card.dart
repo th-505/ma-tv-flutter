@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/models/content_identity.dart';
 import '../../core/tv/tv_remote_focus.dart';
 import '../../core/theme/app_theme.dart';
@@ -63,24 +64,18 @@ class _PosterCardState extends State<PosterCard> {
           children: [
             // Poster Image
             if (posterUrl != null)
-              Image.network(
-                posterUrl,
+              CachedNetworkImage(
+                imageUrl: posterUrl,
                 fit: BoxFit.cover,
-                filterQuality: FilterQuality.medium,
-                cacheWidth: MediaQuery.devicePixelRatioOf(context) > 2 ? 500 : 342,
-                errorBuilder: (_, __, ___) => _buildFallback(),
-                loadingBuilder: (_, child, progress) {
-                  if (progress == null) return child;
-                  return Container(
-                    color: AppColors.darkElevated,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.gold400,
-                      ),
-                    ),
-                  );
-                },
+                memCacheWidth: (widget.width * MediaQuery.devicePixelRatioOf(context)).round().clamp(160, 500),
+                fadeInDuration: const Duration(milliseconds: 120),
+                placeholder: (_, __) => Container(
+                  color: AppColors.darkElevated,
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold400),
+                  ),
+                ),
+                errorWidget: (_, __, ___) => _buildFallback(),
               )
             else
               _buildFallback(),
