@@ -85,12 +85,18 @@ class _LiveStreamPlayerScreenState extends State<LiveStreamPlayerScreen> {
           ),
         ],
       ),
-      body:Center(
+      body:SafeArea(
+        child:Center(
         child:_error!=null&&_controller==null
           ?Column(mainAxisSize:MainAxisSize.min,children:[
               const Icon(Icons.error_outline,color:AppColors.gold400,size:48),
               const SizedBox(height:12),
               const Text('تعذر تشغيل جميع المصادر المتاحة',style:TextStyle(color:Colors.white)),
+              const SizedBox(height:8),
+              const Padding(
+                padding:EdgeInsets.symmetric(horizontal:24),
+                child:Text('تحقق من الاتصال أو أعد المحاولة لاختيار أفضل مصدر متاح.',textAlign:TextAlign.center,style:TextStyle(color:Colors.white60,fontSize:12)),
+              ),
               const SizedBox(height:8),
               TextButton(onPressed:()=>_openFrom(0),child:const Text('إعادة المحاولة')),
             ])
@@ -100,6 +106,7 @@ class _LiveStreamPlayerScreenState extends State<LiveStreamPlayerScreen> {
                 aspectRatio:_controller!.value.aspectRatio==0?16/9:_controller!.value.aspectRatio,
                 child:VideoPlayer(_controller!),
               ),
+        ),
       ),
       floatingActionButton:_controller==null?null:FloatingActionButton(
         onPressed:()=>setState(()=>_controller!.value.isPlaying?_controller!.pause():_controller!.play()),
