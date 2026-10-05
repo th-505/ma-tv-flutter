@@ -200,7 +200,18 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
               },
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                '\${filtered.length} قناة',
+                style: const TextStyle(color: Colors.white54, fontSize: 11, fontFamily: 'Cairo'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
 
           // Channels Grid
           Expanded(
