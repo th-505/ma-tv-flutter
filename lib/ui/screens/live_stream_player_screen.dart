@@ -19,16 +19,23 @@ class _LiveStreamPlayerScreenState extends State<LiveStreamPlayerScreen> {
   VideoPlayerController? _controller;
   Object? _error;
   int _sourceIndex=0;
+  int _openSerial=0;
   late ProgressRepository _progressRepository;
 
   @override
   void initState(){super.initState();_progressRepository=context.read<ProgressRepository>();_openFrom(0);}
 
   Future<void> _openFrom(int start) async {
+    final serial=++_openSerial;
     await _controller?.dispose();
     _controller=null;
     _error=null;
     if(mounted) setState((){});
+    if(widget.sources.isEmpty){
+      _error=StateError('No live sources');
+      if(mounted)setState((){});
+      return;
+    }
     final ranked=LiveHealthEngine.instance.rank<LiveSourceModel>(
       widget.sources,
       (s)=>s.sourceId,
@@ -43,7 +50,8 @@ class _LiveStreamPlayerScreenState extends State<LiveStreamPlayerScreen> {
       final sw=Stopwatch()..start();
       try{
         final controller=VideoPlayerController.networkUrl(Uri.parse(source.url));
-        await controller.initialize();
+        await controller.initialize().timeout(const Duration(seconds:12));
+        if(!mounted||serial!=_openSerial){await controller.dispose();return;}
         await controller.play();
         sw.stop();
         LiveHealthEngine.instance.recordSuccess(source.sourceId,sw.elapsedMilliseconds);
@@ -52,6 +60,7 @@ class _LiveStreamPlayerScreenState extends State<LiveStreamPlayerScreen> {
         return;
       }catch(e){
         sw.stop();
+        if(serial!=_openSerial)return;
         LiveHealthEngine.instance.recordFailure(source.sourceId);
         _error=e;
       }
@@ -60,7 +69,7 @@ class _LiveStreamPlayerScreenState extends State<LiveStreamPlayerScreen> {
   }
 
   @override
-  void dispose(){_controller?.dispose();super.dispose();}
+  void dispose(){_openSerial++;_controller?.dispose();super.dispose();}
 
   @override
   Widget build(BuildContext context){
