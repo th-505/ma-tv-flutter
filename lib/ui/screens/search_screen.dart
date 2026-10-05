@@ -99,6 +99,12 @@ class _SearchScreenState extends State<SearchScreen> {
                 : null,
           ),
           style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+          textInputAction: TextInputAction.search,
+          onSubmitted: (value) {
+            _debounce?.cancel();
+            final query = value.trim();
+            if (query.isNotEmpty) _runSearch(query);
+          },
         ),
       ),
       body: Column(
