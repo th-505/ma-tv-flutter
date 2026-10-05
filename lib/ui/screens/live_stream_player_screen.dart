@@ -52,7 +52,7 @@ class _LiveStreamPlayerScreenState extends State<LiveStreamPlayerScreen> {
         final controller=VideoPlayerController.networkUrl(Uri.parse(source.url));
         await controller.initialize().timeout(const Duration(seconds:12));
         if(!mounted||serial!=_openSerial){await controller.dispose();return;}
-        await controller.play();
+        if(_progressRepository.autoplay) await controller.play();
         sw.stop();
         LiveHealthEngine.instance.recordSuccess(source.sourceId,sw.elapsedMilliseconds);
         if(!mounted){await controller.dispose();return;}
