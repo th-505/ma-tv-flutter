@@ -64,7 +64,9 @@ class ContentRail extends StatelessWidget {
           height: MediaQuery.sizeOf(context).width >= 900 ? 230 : 215,
           child: ListView.separated(
             primary: false,
-            scrollCacheExtent: MediaQuery.sizeOf(context).width * 0.75,
+            scrollCacheExtent: ScrollCacheExtent.pixels(
+              MediaQuery.sizeOf(context).width * 0.75,
+            ),
             physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             scrollDirection: Axis.horizontal,
