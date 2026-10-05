@@ -16,13 +16,15 @@ import 'ui/screens/search_screen.dart';
 import 'ui/screens/settings_screen.dart';
 import 'ui/widgets/responsive_nav.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  final progress = ProgressRepository();
-  await progress.init();
   runApp(
-    ChangeNotifierProvider.value(
-      value: progress,
+    ChangeNotifierProvider(
+      create: (_) {
+        final progress = ProgressRepository();
+        progress.init();
+        return progress;
+      },
       child: const MATVApp(),
     ),
   );
