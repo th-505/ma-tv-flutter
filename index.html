@@ -57,22 +57,6 @@
     <div style="font-size: 22px; font-weight: 800; letter-spacing: 1px;">MA-TV</div>
     <div style="font-size: 13px; color: #8F6F16; margin-top: 6px;">جاري تحميل النظام السينمائي...</div>
   </div>
-  <script src="flutter.js" defer></script>
-  <script>
-    window.addEventListener('load', function(ev) {
-      _flutter.loader.loadEntrypoint({
-        serviceWorker: {
-          serviceWorkerVersion: "730440664",
-        },
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            const loading = document.getElementById('loading');
-            if (loading) loading.remove();
-            appRunner.runApp();
-          });
-        }
-      });
-    });
-  </script>
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
