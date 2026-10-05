@@ -54,7 +54,7 @@ class ResponsiveAppShell extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
                 border: Border(
-                  left: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                  left: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
                 ),
               ),
               child: Column(
@@ -86,9 +86,9 @@ class ResponsiveAppShell extends StatelessWidget {
                             margin: const EdgeInsets.symmetric(horizontal: 10),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
-                              color: isSelected ? AppColors.gold400.withOpacity(0.15) : Colors.transparent,
+                              color: isSelected ? AppColors.gold400.withValues(alpha: 0.15) : Colors.transparent,
                               borderRadius: BorderRadius.circular(12),
-                              border: isSelected ? Border.all(color: AppColors.gold400.withOpacity(0.3)) : null,
+                              border: isSelected ? Border.all(color: AppColors.gold400.withValues(alpha: 0.3)) : null,
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -128,16 +128,16 @@ class ResponsiveAppShell extends StatelessWidget {
       body: child,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
+          color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.95),
           border: Border(
-            top: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+            top: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
           ),
         ),
         child: NavigationBar(
           selectedIndex: currentIndex,
           onDestinationSelected: onTabSelected,
           backgroundColor: Colors.transparent,
-          indicatorColor: AppColors.gold400.withOpacity(0.2),
+          indicatorColor: AppColors.gold400.withValues(alpha: 0.2),
           destinations: navTabs.map((tab) {
             return NavigationDestination(
               icon: Icon(tab.icon, color: Colors.white70),
