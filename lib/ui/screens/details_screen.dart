@@ -309,10 +309,15 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   const SizedBox(height: 24),
 
                   // Action Buttons
-                  Row(
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    alignment: WrapAlignment.start,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       // Quick Play Button
-                      Expanded(
+                      SizedBox(
+                        width: webWide ? 260 : 220,
                         child: ElevatedButton.icon(
                           onPressed: _handleQuickPlay,
                           style: ElevatedButton.styleFrom(
@@ -328,7 +333,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
 
                       // Server Picker
                       OutlinedButton.icon(
@@ -342,7 +346,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
                         icon: const Icon(Icons.layers_outlined, size: 20),
                         label: const Text('السيرفرات', style: TextStyle(fontFamily: 'Cairo')),
                       ),
-                      const SizedBox(width: 10),
 
                       // Favorite Button
                       IconButton.filledTonal(
@@ -352,7 +355,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
                           color: isFav ? AppColors.gold400 : Colors.white70,
                         ),
                       ),
-                      const SizedBox(width: 6),
 
                       // Share Button
                       IconButton.filledTonal(
