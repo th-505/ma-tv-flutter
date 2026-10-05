@@ -46,6 +46,22 @@ jobs:
       - name: Build Web Application
         run: flutter build web --release --target lib/web_probe.dart --base-href "/ma-tv-flutter/"
 
+      - name: Browser Smoke Test
+        run: |
+          mkdir -p /tmp/matv-site/ma-tv-flutter
+          cp -R build/web/. /tmp/matv-site/ma-tv-flutter/
+          python3 -m http.server 8080 --directory /tmp/matv-site >/tmp/matv-http.log 2>&1 &
+          sleep 2
+          google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=1280,720 --virtual-time-budget=15000 --screenshot=web-smoke.png http://127.0.0.1:8080/ma-tv-flutter/
+          test -s web-smoke.png
+
+      - name: Upload Browser Smoke Screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-smoke
+          path: web-smoke.png
+          retention-days: 3
+
       - name: Deploy to GitHub Pages (gh-pages)
         uses: peaceiris/actions-gh-pages@v4
         with:
