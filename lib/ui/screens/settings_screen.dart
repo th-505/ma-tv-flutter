@@ -15,7 +15,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final ProgressRepository _repo = ProgressRepository();
   final ProxyService _proxyService = ProxyService();
   final ConsumetService _consumet = ConsumetService();
 
@@ -32,9 +31,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final isDark = await _repo.isDarkMode();
-    final history = await _repo.getWatchHistory();
-    final favs = await _repo.getFavorites();
+    final repo = context.read<ProgressRepository>();
+    final isDark = await repo.isDarkMode();
+    final history = await repo.getWatchHistory();
+    final favs = await repo.getFavorites();
     if (mounted) {
       setState(() {
         _isDark = isDark;
@@ -70,11 +70,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _clearCache() async {
-    await _repo.clearAllHistory();
+    await context.read<ProgressRepository>().clearAllHistory();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('تم مسح سجل المشاهدة والذاكرة المؤقتة بنجاح'),
+          content: Text('تم مسح سجل المشاهدة ومواضع الاستئناف بنجاح'),
           backgroundColor: AppColors.gold400,
         ),
       );
@@ -114,7 +114,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 activeThumbColor: AppColors.gold400,
                 onChanged: (val) async {
                   setState(() => _isDark = val);
-                  await _repo.setDarkMode(val);
+                  await context.read<ProgressRepository>().setDarkMode(val);
                 },
               ),
             ),
@@ -201,7 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: Theme.of(context).cardColor,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: ListTile(
-                title: const Text('مسح سجل المشاهدة والمؤقتات', style: TextStyle(fontWeight: FontWeight.bold)),
+                title: const Text('مسح سجل المشاهدة ومواضع الاستئناف', style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text('العناصر المحفوظة حالياً: $_cacheItemCount عنصر'),
                 trailing: TvFocusableWidget(
                   onSelect: _clearCache,
@@ -233,8 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text('الإصدار: 2.0.0 (Dart/Flutter Architecture)', style: TextStyle(color: Colors.white70)),
                     SizedBox(height: 4),
                     Text('المنصات المدعومة: Web (GitHub Pages) | Android APK | Android TV | iOS IPA', style: TextStyle(color: Colors.white70)),
-                    SizedBox(height: 4),
-                    Text('هيكل الوكلاء: 100+ Specialized Autonomous AI Engineering Agents', style: TextStyle(color: AppColors.gold400)),
+
                   ],
                 ),
               ),
