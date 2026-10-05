@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../data/services/tmdb_service.dart';
 import '../../domain/models/content_identity.dart';
@@ -21,26 +22,58 @@ class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   List<ContentIdentity> _results = [];
   bool _searching = false;
+  bool _searchFailed = false;
   String _scope = 'all';
+  Timer? _debounce;
+  int _requestSerial = 0;
 
-  void _onSearchChanged(String query) async {
-    if (query.trim().isEmpty) {
-      setState(() => _results = []);
+  void _onSearchChanged(String query) {
+    _debounce?.cancel();
+    final normalized = query.trim();
+    if (normalized.isEmpty) {
+      _requestSerial++;
+      setState(() {
+        _results = [];
+        _searching = false;
+        _searchFailed = false;
+      });
       return;
     }
+    _debounce = Timer(const Duration(milliseconds: 350), () => _runSearch(normalized));
+  }
 
-    setState(() => _searching = true);
-    final res = switch (_scope) {
-      'movie' => await _tmdb.searchMovies(query),
-      'tv' => await _tmdb.searchSeries(query),
-      _ => await _tmdb.search(query),
-    };
-    if (mounted) {
+  Future<void> _runSearch(String query) async {
+    final serial = ++_requestSerial;
+    setState(() {
+      _searching = true;
+      _searchFailed = false;
+    });
+    try {
+      final res = switch (_scope) {
+        'movie' => await _tmdb.searchMovies(query),
+        'tv' => await _tmdb.searchSeries(query),
+        _ => await _tmdb.search(query),
+      };
+      if (!mounted || serial != _requestSerial) return;
       setState(() {
         _results = res;
         _searching = false;
       });
+    } catch (_) {
+      if (!mounted || serial != _requestSerial) return;
+      setState(() {
+        _results = [];
+        _searching = false;
+        _searchFailed = true;
+      });
     }
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -93,16 +126,33 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           Expanded(child: _searching
           ? const Center(child: CircularProgressIndicator(color: AppColors.gold400))
-          : _results.isEmpty
+          : _searchFailed
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.cloud_off, size: 54, color: AppColors.gold400),
+                      const SizedBox(height: 12),
+                      const Text('تعذر تنفيذ البحث', style: TextStyle(fontFamily: 'Cairo', color: Colors.white70)),
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: () => _runSearch(_searchCtrl.text.trim()),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('إعادة المحاولة'),
+                      ),
+                    ],
+                  ),
+                )
+              : _results.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.search, size: 60, color: Colors.white.withValues(alpha: 0.2)),
                       const SizedBox(height: 12),
-                      const Text(
-                        'ابدأ بكتابة اسم العمل للبحث السريع',
-                        style: TextStyle(fontFamily: 'Cairo', color: Colors.white54),
+                      Text(
+                        _searchCtrl.text.trim().isEmpty ? 'ابدأ بكتابة اسم العمل للبحث السريع' : 'لا توجد نتائج مطابقة',
+                        style: const TextStyle(fontFamily: 'Cairo', color: Colors.white54),
                       ),
                     ],
                   ),
