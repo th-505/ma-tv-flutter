@@ -37,6 +37,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _useProxy = false;
   double _playbackSpeed = 1.0;
   bool _restoredProgress = false;
+  int _playerRequestSerial = 0;
   late ProgressRepository _progressRepository;
 
   final List<double> _speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
@@ -58,6 +59,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Future<void> _initPlayer(String streamUrl) async {
+    final serial = ++_playerRequestSerial;
     setState(() {
       _isLoading = true;
       _hasError = false;
@@ -86,7 +88,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
       );
 
       _controller = controller;
-      await controller.initialize();
+      await controller.initialize().timeout(const Duration(seconds: 12));
+      if (!mounted || serial != _playerRequestSerial) {
+        await controller.dispose();
+        return;
+      }
       await controller.setPlaybackSpeed(_playbackSpeed);
       if (!_restoredProgress && mounted && _progressRepository.resumePlayback) {
         final saved = _progressRepository.getProgress(widget.identity.tmdbId);
@@ -106,6 +112,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       }
     } catch (e) {
       stopwatch.stop();
+      if (serial != _playerRequestSerial) return;
       ServerManager.recordPlayback(_currentSource.providerId, success: false, latencyMs: stopwatch.elapsedMilliseconds);
       if (mounted) {
         setState(() {
@@ -140,6 +147,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _showServerSwitcher() {
+    if (widget.allSources.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا توجد سيرفرات متاحة حالياً')),
+      );
+      return;
+    }
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.darkElevated,
@@ -269,7 +282,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         label: const Text('تشغيل عبر البروكسي (Proxy Relay)', style: TextStyle(fontFamily: 'Cairo')),
                       ),
                       OutlinedButton.icon(
-                        onPressed: () => _switchServer((_currentServerIdx + 1) % widget.allSources.length),
+                        onPressed: widget.allSources.isEmpty ? null : () => _switchServer((_currentServerIdx + 1) % widget.allSources.length),
                         style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
                         icon: const Icon(Icons.skip_next),
                         label: const Text('السيرفر التالي', style: TextStyle(fontFamily: 'Cairo')),
