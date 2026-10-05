@@ -86,7 +86,7 @@ class TmdbService {
   Future<List<EpisodeIdentity>> getSeasonEpisodes(int seriesId, int seasonNumber) async {
     final url = '$_baseUrl/tv/$seriesId/season/$seasonNumber?api_key=$_apiKey&language=ar-SA';
     try {
-      final res = await http.get(Uri.parse(url));
+      final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         final eps = data['episodes'] as List<dynamic>?;
