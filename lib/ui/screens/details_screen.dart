@@ -128,6 +128,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
       widget.content,
       season: _selectedSeason,
       episode: _selectedEpisode?.episodeNumber ?? 1,
+      preferredQuality: context.read<ProgressRepository>().preferredQuality,
     );
 
     if (sources.isEmpty) {
@@ -144,9 +145,12 @@ class _DetailsScreenState extends State<DetailsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.72,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -188,6 +192,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 ),
               ),
             ],
+              ),
+            ),
           ),
         );
       },
