@@ -44,7 +44,7 @@ class WebBootProbe extends StatelessWidget {
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: const [
+            children: [
               Icon(Icons.check_circle_outline, color: Color(0xFFD4AF37), size: 72),
               SizedBox(height: 20),
               Text('MA-TV WEB OK', style: TextStyle(color: Color(0xFFD4AF37), fontSize: 28, fontWeight: FontWeight.bold)),
