@@ -166,8 +166,6 @@ class ResponsiveAppShell extends StatelessWidget {
         ),
         child: SafeArea(
           top: false,
-          child: SafeArea(
-          top: false,
           minimum: const EdgeInsets.only(bottom: 4),
           child: NavigationBar(
           selectedIndex: currentIndex,
