@@ -47,6 +47,24 @@ jobs:
       - name: Build Web Application
         run: flutter build web --release --target lib/main.dart --base-href "/ma-tv-flutter/"
 
+      - name: Cache Bust Flutter Web Assets
+        env:
+          BUILD_ID: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          build_id = os.environ["BUILD_ID"]
+          index = Path("build/web/index.html")
+          bootstrap = Path("build/web/flutter_bootstrap.js")
+          index_text = index.read_text()
+          index_text = index_text.replace('flutter_bootstrap.js"', f'flutter_bootstrap.js?v={build_id}"')
+          index.write_text(index_text)
+          bootstrap_text = bootstrap.read_text()
+          bootstrap_text = bootstrap_text.replace('"mainJsPath":"main.dart.js"', f'"mainJsPath":"main.dart.js?v={build_id}"')
+          bootstrap.write_text(bootstrap_text)
+          PY
+
       - name: Browser Smoke Test
         run: |
           mkdir -p /tmp/matv-site/ma-tv-flutter
