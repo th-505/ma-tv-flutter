@@ -51,6 +51,21 @@
       }
     });
   </script>
-  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    (async function () {
+      if ('serviceWorker' in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map(function (registration) {
+            return registration.unregister();
+          }));
+        } catch (_) {}
+      }
+      const script = document.createElement('script');
+      script.src = 'flutter_bootstrap.js?v=sw-free-1';
+      script.async = true;
+      document.body.appendChild(script);
+    })();
+  </script>
 </body>
 </html>
