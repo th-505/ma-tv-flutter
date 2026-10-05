@@ -104,7 +104,9 @@ class HeroBanner extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Action Buttons
-                Row(
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
                   children: [
                     TvFocusableWidget(
                       onSelect: onPlay,
@@ -133,7 +135,6 @@ class HeroBanner extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
                     TvFocusableWidget(
                       onSelect: onDetails,
                       borderRadius: BorderRadius.circular(30),
