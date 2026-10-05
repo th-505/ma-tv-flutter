@@ -193,11 +193,11 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
                   )
                 : GridView.builder(
                     padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 220,
-                      childAspectRatio: 1.4,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: MediaQuery.sizeOf(context).width >= 900 ? 280 : 220,
+                      childAspectRatio: MediaQuery.sizeOf(context).width >= 900 ? 1.65 : 1.4,
+                      crossAxisSpacing: MediaQuery.sizeOf(context).width >= 900 ? 18 : 12,
+                      mainAxisSpacing: MediaQuery.sizeOf(context).width >= 900 ? 18 : 12,
                     ),
                     itemCount: filtered.length,
                     itemBuilder: (context, idx) {
