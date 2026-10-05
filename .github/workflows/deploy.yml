@@ -2,11 +2,11 @@ name: MA-TV Web Beta
 
 on:
   push:
-    branches: [ main, parity-rebuild-1 ]
+    branches: [ main, parity-rebuild-1, web-performance-next ]
   workflow_dispatch:
 
 concurrency:
-  group: ma-tv-web-beta
+  group: ma-tv-web-beta-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
