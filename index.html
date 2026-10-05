@@ -1,82 +1,28 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html lang="ar" dir="rtl">
 <head>
   <base href="/ma-tv-flutter/">
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="MA-TV Cinematic Gold - تطبيق المشاهدة الترفيهية والبث المباشر فائق الجودة">
-
-  <!-- iOS meta tags & icons -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="MA-TV">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>MA-TV Cinematic Gold</title>
-  <link rel="manifest" href="manifest.json">
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MA-TV">
+  <title>MA-TV</title>
   <style>
-    body {
-      background-color: #0A0A0B;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+    html, body { margin: 0; width: 100%; height: 100%; background: #0A0A0B; }
+    #boot-status { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; color: #D4AF37; font: 700 20px Arial, sans-serif; }
   </style>
 </head>
 <body>
-  <div id="boot-error" style="display:none;position:fixed;inset:0;padding:32px;background:#0A0A0B;color:#fff;font-family:Arial,sans-serif;direction:rtl;z-index:9999">
-    <h2 style="color:#D4AF37">تعذر تشغيل MA-TV</h2>
-    <p id="boot-error-message">حدث خطأ أثناء تشغيل Flutter Web.</p>
-  </div>
+  <div id="boot-status">MA-TV: loading Flutter engine…</div>
   <script>
-    window.addEventListener('error', function (event) {
-      var box = document.getElementById('boot-error');
-      var msg = document.getElementById('boot-error-message');
-      if (box && msg) {
-        msg.textContent = event.message || 'JavaScript startup error';
-        box.style.display = 'block';
-      }
+    window.addEventListener('error', function (e) {
+      var el = document.getElementById('boot-status');
+      if (el) el.textContent = 'MA-TV JS ERROR: ' + (e.message || 'unknown');
     });
-    window.addEventListener('unhandledrejection', function (event) {
-      var box = document.getElementById('boot-error');
-      var msg = document.getElementById('boot-error-message');
-      if (box && msg) {
-        msg.textContent = String(event.reason || 'Flutter startup promise rejected');
-        box.style.display = 'block';
-      }
+    window.addEventListener('unhandledrejection', function (e) {
+      var el = document.getElementById('boot-status');
+      if (el) el.textContent = 'MA-TV PROMISE ERROR: ' + String(e.reason || 'unknown');
     });
   </script>
-  <script src="flutter.js" defer></script>
-  <script>
-    window.addEventListener('load', function () {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations()
-          .then(function (regs) { return Promise.all(regs.map(function (r) { return r.unregister(); })); })
-          .catch(function () {});
-      }
-
-      _flutter.loader.loadEntrypoint({
-        onEntrypointLoaded: function (engineInitializer) {
-          engineInitializer.initializeEngine({
-            renderer: 'html'
-          }).then(function (appRunner) {
-            return appRunner.runApp();
-          }).catch(function (error) {
-            var box = document.getElementById('boot-error');
-            var msg = document.getElementById('boot-error-message');
-            if (box && msg) {
-              msg.textContent = String(error);
-              box.style.display = 'block';
-            }
-          });
-        }
-      });
-    });
-  </script>
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
