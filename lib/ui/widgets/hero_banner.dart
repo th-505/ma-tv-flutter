@@ -173,7 +173,8 @@ class HeroBanner extends StatelessWidget {
             ),
           ),
         ],
-      );
+      ),
+    );
       },
     );
   }
