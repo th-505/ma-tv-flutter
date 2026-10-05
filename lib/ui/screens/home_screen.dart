@@ -24,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final TmdbService _tmdb = TmdbService();
   bool _loading = true;
   bool _loadFailed = false;
+  int _loadSerial = 0;
 
   List<ContentIdentity> _trendingMovies = [];
   List<ContentIdentity> _trendingSeries = [];
@@ -42,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
+    final serial = ++_loadSerial;
     setState(() {
       _loading = true;
       _loadFailed = false;
@@ -59,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _tmdb.getAnime(),
       ]);
 
-      if (mounted) {
+      if (mounted && serial == _loadSerial) {
         setState(() {
           _trendingMovies = results[0];
           _trendingSeries = results[1];
@@ -75,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && serial == _loadSerial) {
         setState(() {
           _loading = false;
           _loadFailed = true;
