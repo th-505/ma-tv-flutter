@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../domain/models/content_identity.dart';
@@ -213,7 +214,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     final isFav = progress.isFavorite(widget.content.tmdbId);
     final c = widget.content;
     final backdrop = c.canonical.backdropPath != null
-        ? 'https://image.tmdb.org/t/p/original${c.canonical.backdropPath}'
+        ? 'https://image.tmdb.org/t/p/w1280${c.canonical.backdropPath}'
         : null;
 
     final webWide = MediaQuery.sizeOf(context).width >= 900;
@@ -237,7 +238,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 fit: StackFit.expand,
                 children: [
                   if (backdrop != null)
-                    Image.network(backdrop, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox())
+                    CachedNetworkImage(
+                      imageUrl: backdrop,
+                      fit: BoxFit.cover,
+                      memCacheWidth: webWide ? 1280 : 780,
+                      fadeInDuration: const Duration(milliseconds: 150),
+                      placeholder: (_, __) => Container(color: AppColors.darkElevated),
+                      errorWidget: (_, __, ___) => const SizedBox(),
+                    )
                   else
                     Container(color: AppColors.darkElevated),
                   Container(
