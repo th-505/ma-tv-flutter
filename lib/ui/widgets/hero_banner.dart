@@ -24,7 +24,10 @@ class HeroBanner extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
     final desktop = width >= 900;
 
-    return Container(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final localWidth = constraints.maxWidth;
+        return Container(
       height: desktop ? 520 : 420,
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 24),
@@ -71,7 +74,7 @@ class HeroBanner extends StatelessWidget {
           Positioned(
             bottom: desktop ? 44 : 24,
             right: desktop ? 48 : 20,
-            left: desktop ? width * 0.35 : 20,
+            left: desktop ? localWidth * 0.35 : 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -165,7 +168,8 @@ class HeroBanner extends StatelessWidget {
             ),
           ),
         ],
-      ),
+      );
+      },
     );
   }
 }
