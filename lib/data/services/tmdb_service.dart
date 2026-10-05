@@ -71,6 +71,18 @@ class TmdbService {
     return _fetchList(url);
   }
 
+  Future<List<ContentIdentity>> searchMovies(String query) async {
+    if (query.trim().isEmpty) return [];
+    final url = '$_baseUrl/search/movie?api_key=$_apiKey&language=ar-SA&include_adult=false&query=${Uri.encodeComponent(query)}';
+    return _fetchList(url);
+  }
+
+  Future<List<ContentIdentity>> searchSeries(String query) async {
+    if (query.trim().isEmpty) return [];
+    final url = '$_baseUrl/search/tv?api_key=$_apiKey&language=ar-SA&include_adult=false&query=${Uri.encodeComponent(query)}';
+    return _fetchList(url);
+  }
+
   Future<List<EpisodeIdentity>> getSeasonEpisodes(int seriesId, int seasonNumber) async {
     final url = '$_baseUrl/tv/$seriesId/season/$seasonNumber?api_key=$_apiKey&language=ar-SA';
     try {
