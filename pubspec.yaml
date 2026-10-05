@@ -17,7 +17,7 @@ dependencies:
 
   # Networking & HTTP
   http: ^1.2.1
-  cached_network_image: ^3.4.1
+  cached_network_image: ^3.4.0
 
   # Video Playback (Web, Android, iOS, Android TV)
   video_player: ^2.8.5
