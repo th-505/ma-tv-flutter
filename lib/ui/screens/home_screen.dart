@@ -120,6 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return RefreshIndicator(
       onRefresh: _loadData,
+      notificationPredicate: (notification) => notification.depth == 0,
       color: AppColors.gold400,
       backgroundColor: AppColors.darkElevated,
       child: SingleChildScrollView(
