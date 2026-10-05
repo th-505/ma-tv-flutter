@@ -37,10 +37,10 @@ class WebBootProbe extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: const Color(0xFF0A0A0B),
+        backgroundColor: Color(0xFF0A0A0B),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
