@@ -1,11 +1,13 @@
 name: MA-TV Web Beta
 
 on:
-  pull_request:
-    branches: [main]
   push:
     branches: [ main, parity-rebuild-1 ]
   workflow_dispatch:
+
+concurrency:
+  group: ma-tv-web-beta
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -37,8 +39,7 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Analyze Dart (non-blocking during Web Beta)
-        continue-on-error: true
+      - name: Analyze Dart
         run: flutter analyze lib test/playback_engines_test.dart
 
       - name: Run Tests
