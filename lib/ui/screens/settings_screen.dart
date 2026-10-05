@@ -93,9 +93,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: Directionality(
         textDirection: TextDirection.rtl,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100),
+            child: ListView(
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.sizeOf(context).width >= 900 ? 40 : 24,
+                vertical: 16,
+              ),
+              children: [
             // Theme Section
             _buildSectionHeader('المظهر والواجهة', Icons.palette_outlined),
             Card(
@@ -234,7 +240,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 32),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
