@@ -218,6 +218,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    _playerRequestSerial++;
     final controller=_controller;
     if(controller!=null&&controller.value.isInitialized){
       final p=controller.value.position.inMilliseconds/1000;
@@ -278,6 +279,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   const SizedBox(height: 24),
                   Wrap(
                     spacing: 12,
+                    runSpacing: 12,
                     children: [
                       ElevatedButton.icon(
                         onPressed: _retryWithProxy,
