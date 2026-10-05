@@ -31,7 +31,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
   EpisodeIdentity? _selectedEpisode;
   List<EpisodeIdentity> _episodes = [];
   bool _loadingEpisodes = false;
+  bool _episodesFailed = false;
   bool _loadingDetails = true;
+  bool _detailsFailed = false;
+  int _seasonRequestSerial = 0;
   Map<String, dynamic>? _details;
   List<ContentIdentity> _recommendations = [];
   List<ContentIdentity> _similar = [];
@@ -47,6 +50,12 @@ class _DetailsScreenState extends State<DetailsScreen> {
   }
 
   Future<void> _loadDetails() async {
+    if (mounted) {
+      setState(() {
+        _loadingDetails = true;
+        _detailsFailed = false;
+      });
+    }
     final isSeries = widget.content.mediaType == 'series';
     final results = await Future.wait<dynamic>([
       isSeries ? _tmdb.getSeriesDetails(widget.content.tmdbId) : _tmdb.getMovieDetails(widget.content.tmdbId),
@@ -56,6 +65,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     if (!mounted) return;
     setState(() {
       _details = results[0] as Map<String, dynamic>?;
+      _detailsFailed = _details == null;
       _recommendations = results[1] as List<ContentIdentity>;
       _similar = results[2] as List<ContentIdentity>;
       final rawSeasons = (_details?['seasons'] as List<dynamic>?) ?? const [];
@@ -69,18 +79,29 @@ class _DetailsScreenState extends State<DetailsScreen> {
   }
 
   Future<void> _loadSeason(int season) async {
-    setState(() => _loadingEpisodes = true);
+    final serial = ++_seasonRequestSerial;
+    setState(() {
+      _loadingEpisodes = true;
+      _episodesFailed = false;
+    });
     final eps = await _tmdb.getSeasonEpisodes(widget.content.tmdbId, season);
-    if (mounted) {
+    if (mounted && serial == _seasonRequestSerial && season == _selectedSeason) {
       setState(() {
         _episodes = eps;
         _selectedEpisode = eps.isNotEmpty ? eps.first : null;
+        _episodesFailed = eps.isEmpty;
         _loadingEpisodes = false;
       });
     }
   }
 
   void _handleQuickPlay() {
+    if (widget.content.mediaType == 'series' && _selectedEpisode == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اختر حلقة متاحة أولاً')),
+      );
+      return;
+    }
     final sources = ServerManager.buildSources(
       widget.content,
       season: _selectedSeason,
@@ -89,15 +110,32 @@ class _DetailsScreenState extends State<DetailsScreen> {
     );
     if (sources.isNotEmpty) {
       widget.onPlay(widget.content, sources.first.source, sources, _selectedEpisode);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يوجد سيرفر مشاهدة متاح حالياً')),
+      );
     }
   }
 
   void _showSourcePicker() {
+    if (widget.content.mediaType == 'series' && _selectedEpisode == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اختر حلقة متاحة أولاً')),
+      );
+      return;
+    }
     final sources = ServerManager.buildSources(
       widget.content,
       season: _selectedSeason,
       episode: _selectedEpisode?.episodeNumber ?? 1,
     );
+
+    if (sources.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يوجد سيرفر مشاهدة متاح حالياً')),
+      );
+      return;
+    }
 
     showModalBottomSheet(
       context: context,
@@ -319,6 +357,16 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       padding: EdgeInsets.symmetric(vertical: 12),
                       child: LinearProgressIndicator(color: AppColors.gold400),
                     ),
+                  if (_detailsFailed) ...[
+                    Center(
+                      child: OutlinedButton.icon(
+                        onPressed: _loadDetails,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('تعذر تحميل التفاصيل — إعادة المحاولة'),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                   if (_details != null) ...[
                     Wrap(
                       spacing: 8,
@@ -540,6 +588,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     const SizedBox(height: 16),
                     if (_loadingEpisodes)
                       const Center(child: CircularProgressIndicator(color: AppColors.gold400))
+                    else if (_episodesFailed)
+                      Center(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _loadSeason(_selectedSeason),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('تعذر تحميل حلقات هذا الموسم — إعادة المحاولة'),
+                        ),
+                      )
                     else
                       ListView.separated(
                         shrinkWrap: true,
