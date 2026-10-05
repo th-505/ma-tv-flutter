@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/models/content_identity.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/tv/tv_remote_focus.dart';
@@ -18,7 +19,7 @@ class HeroBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final backdrop = content.canonical.backdropPath != null
-        ? 'https://image.tmdb.org/t/p/original${content.canonical.backdropPath}'
+        ? 'https://image.tmdb.org/t/p/w1280${content.canonical.backdropPath}'
         : null;
 
     final width = MediaQuery.sizeOf(context).width;
@@ -36,10 +37,13 @@ class HeroBanner extends StatelessWidget {
         children: [
           // Background Image
           if (backdrop != null)
-            Image.network(
-              backdrop,
+            CachedNetworkImage(
+              imageUrl: backdrop,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: AppColors.darkElevated),
+              memCacheWidth: desktop ? 1280 : 780,
+              fadeInDuration: const Duration(milliseconds: 150),
+              placeholder: (_, __) => Container(color: AppColors.darkElevated),
+              errorWidget: (_, __, ___) => Container(color: AppColors.darkElevated),
             )
           else
             Container(color: AppColors.darkElevated),
