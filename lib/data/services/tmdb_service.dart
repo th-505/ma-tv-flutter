@@ -4,7 +4,7 @@ import '../../domain/models/content_identity.dart';
 
 class TmdbService {
   static const String _baseUrl = 'https://api.themoviedb.org/3';
-  String _apiKey = 'f89b2518e3a2b72bf4da2880c102a0a3'; // Default public demo key or user-defined
+  String _apiKey = 'f562845c2beca65e1028ff2e31ccaff1'; // Default public demo key or user-defined
 
   void setApiKey(String key) {
     if (key.isNotEmpty) _apiKey = key;
