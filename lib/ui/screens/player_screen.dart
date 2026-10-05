@@ -166,7 +166,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     final pingLabel = idx < 5 ? 'سريع جداً' : (idx < 15 ? 'مستقر' : 'احتياطي');
 
                     return ListTile(
-                      tileColor: isCurrent ? AppColors.gold400.withOpacity(0.15) : Colors.white.withOpacity(0.04),
+                      tileColor: isCurrent ? AppColors.gold400.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.04),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       title: Text(
                         rs.source.providerId,
