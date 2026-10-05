@@ -98,7 +98,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.search, size: 60, color: Colors.white.withOpacity(0.2)),
+                      Icon(Icons.search, size: 60, color: Colors.white.withValues(alpha: 0.2)),
                       const SizedBox(height: 12),
                       const Text(
                         'ابدأ بكتابة اسم العمل للبحث السريع',
