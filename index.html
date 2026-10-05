@@ -51,21 +51,32 @@
       }
     });
   </script>
+  <script src="flutter.js" defer></script>
   <script>
-    (async function () {
+    window.addEventListener('load', function () {
       if ('serviceWorker' in navigator) {
-        try {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(registrations.map(function (registration) {
-            return registration.unregister();
-          }));
-        } catch (_) {}
+        navigator.serviceWorker.getRegistrations()
+          .then(function (regs) { return Promise.all(regs.map(function (r) { return r.unregister(); })); })
+          .catch(function () {});
       }
-      const script = document.createElement('script');
-      script.src = 'flutter_bootstrap.js?v=sw-free-1';
-      script.async = true;
-      document.body.appendChild(script);
-    })();
+
+      _flutter.loader.loadEntrypoint({
+        onEntrypointLoaded: function (engineInitializer) {
+          engineInitializer.initializeEngine({
+            renderer: 'html'
+          }).then(function (appRunner) {
+            return appRunner.runApp();
+          }).catch(function (error) {
+            var box = document.getElementById('boot-error');
+            var msg = document.getElementById('boot-error-message');
+            if (box && msg) {
+              msg.textContent = String(error);
+              box.style.display = 'block';
+            }
+          });
+        }
+      });
+    });
   </script>
 </body>
 </html>
