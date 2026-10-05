@@ -124,7 +124,12 @@ class _HomeScreenState extends State<HomeScreen> {
       color: AppColors.gold400,
       backgroundColor: AppColors.darkElevated,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 56),
+        primary: true,
+        physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.only(
+          bottom: 72 + MediaQuery.paddingOf(context).bottom,
+        ),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1600),
