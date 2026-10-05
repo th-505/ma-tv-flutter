@@ -30,10 +30,11 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     setState(() => _searching = true);
-    var res = await _tmdb.search(query);
-    if (_scope != 'all') {
-      res = res.where((item) => _scope == 'tv' ? item.mediaType == 'series' : item.mediaType == 'movie').toList();
-    }
+    final res = switch (_scope) {
+      'movie' => await _tmdb.searchMovies(query),
+      'tv' => await _tmdb.searchSeries(query),
+      _ => await _tmdb.search(query),
+    };
     if (mounted) {
       setState(() {
         _results = res;
