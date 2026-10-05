@@ -21,6 +21,8 @@ class CatalogScreen extends StatefulWidget {
 class _CatalogScreenState extends State<CatalogScreen> {
   final TmdbService _tmdb = TmdbService();
   bool _loading = true;
+  bool _loadFailed = false;
+  int _requestSerial = 0;
   List<ContentIdentity> _items = [];
   String _selectedFilter = 'trending';
   String? _language;
@@ -45,7 +47,11 @@ class _CatalogScreenState extends State<CatalogScreen> {
   }
 
   Future<void> _applyDiscover() async {
-    setState(() => _loading = true);
+    final serial = ++_requestSerial;
+    setState(() {
+      _loading = true;
+      _loadFailed = false;
+    });
     final res = await _tmdb.discover(
       widget.mediaType == 'movie' ? 'movie' : 'tv',
       language: _language,
@@ -53,18 +59,21 @@ class _CatalogScreenState extends State<CatalogScreen> {
       year: _year,
       sortBy: widget.mediaType == 'series' && _sortBy == 'primary_release_date.desc' ? 'first_air_date.desc' : _sortBy,
     );
-    if (!mounted) return;
+    if (!mounted || serial != _requestSerial) return;
     setState(() {
       _selectedFilter = 'discover';
       _items = res;
+      _loadFailed = res.isEmpty;
       _loading = false;
     });
   }
 
   Future<void> _fetchCategory(String filter) async {
+    final serial = ++_requestSerial;
     setState(() {
       _selectedFilter = filter;
       _loading = true;
+      _loadFailed = false;
     });
 
     List<ContentIdentity> res = [];
@@ -94,9 +103,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
         break;
     }
 
-    if (mounted) {
+    if (mounted && serial == _requestSerial) {
       setState(() {
         _items = res;
+        _loadFailed = res.isEmpty;
         _loading = false;
       });
     }
@@ -205,7 +215,24 @@ class _CatalogScreenState extends State<CatalogScreen> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.gold400))
-                : _items.isEmpty
+                : _loadFailed
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.cloud_off, color: AppColors.gold400, size: 46),
+                            const SizedBox(height: 12),
+                            const Text('تعذر تحميل هذا القسم', style: TextStyle(fontFamily: 'Cairo', color: Colors.white70)),
+                            const SizedBox(height: 10),
+                            OutlinedButton.icon(
+                              onPressed: () => _selectedFilter == 'discover' ? _applyDiscover() : _fetchCategory(_selectedFilter),
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('إعادة المحاولة'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : _items.isEmpty
                     ? const Center(
                         child: Text(
                           'لا يوجد محتوى متاح حالياً',
