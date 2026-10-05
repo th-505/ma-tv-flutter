@@ -29,6 +29,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _onSearchChanged(String query) {
     _debounce?.cancel();
+    if (mounted) setState(() {});
     final normalized = query.trim();
     if (normalized.isEmpty) {
       _requestSerial++;
