@@ -23,6 +23,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TmdbService _tmdb = TmdbService();
   bool _loading = true;
+  bool _loadFailed = false;
 
   List<ContentIdentity> _trendingMovies = [];
   List<ContentIdentity> _trendingSeries = [];
@@ -41,7 +42,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _loadFailed = false;
+    });
     try {
       final results = await Future.wait([
         _tmdb.getTrending(type: 'movie'),
@@ -66,11 +70,17 @@ class _HomeScreenState extends State<HomeScreen> {
           _turkishContent = results[6];
           _koreanContent = results[7];
           _animeContent = results[8];
+          _loadFailed = results.every((items) => items.isEmpty);
           _loading = false;
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadFailed = true;
+        });
+      }
     }
   }
 
@@ -79,6 +89,28 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_loading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.gold400),
+      );
+    }
+
+    if (_loadFailed) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off, color: AppColors.gold400, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'تعذر تحميل محتوى TMDB',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _loadData,
+              icon: const Icon(Icons.refresh),
+              label: const Text('إعادة المحاولة'),
+            ),
+          ],
+        ),
       );
     }
 
