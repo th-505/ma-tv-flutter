@@ -57,7 +57,7 @@ class AppTheme {
         fontWeight: FontWeight.bold,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: AppColors.darkElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -87,7 +87,7 @@ class AppTheme {
         fontWeight: FontWeight.bold,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: AppColors.lightElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
