@@ -144,6 +144,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      isScrollControlled: true,
       builder: (context) {
         return SafeArea(
           child: SizedBox(
