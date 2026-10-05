@@ -125,12 +125,14 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppColors.darkElevated,
       child: SafeArea(
         top: false,
+        bottom: true,
+        minimum: const EdgeInsets.only(bottom: 8),
         child: SingleChildScrollView(
         primary: true,
         physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: EdgeInsets.only(
-          bottom: 72 + MediaQuery.paddingOf(context).bottom,
+          bottom: 88 + MediaQuery.viewPaddingOf(context).bottom,
         ),
         child: Center(
           child: ConstrainedBox(
