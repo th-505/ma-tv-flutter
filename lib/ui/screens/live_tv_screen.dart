@@ -23,6 +23,7 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
   String _selectedCountry = 'all';
   String _selectedCategory = 'all';
   String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   final List<Map<String, String>> _countries = [
     {'code': 'all', 'name': 'الكل', 'flag': '🌐'},
@@ -89,6 +90,12 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final progress = context.watch<ProgressRepository>();
 
@@ -116,10 +123,19 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: TextField(
+              controller: _searchController,
               onChanged: (v) => setState(() => _searchQuery = v),
               decoration: InputDecoration(
                 hintText: 'ابحث عن قناة...',
                 prefixIcon: const Icon(Icons.search, color: Colors.white60),
+                suffixIcon: _searchQuery.isEmpty ? null : IconButton(
+                  tooltip: 'مسح البحث',
+                  icon: const Icon(Icons.close, color: Colors.white60),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                ),
                 filled: true,
                 fillColor: AppColors.darkElevated,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
