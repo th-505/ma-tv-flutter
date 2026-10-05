@@ -29,6 +29,28 @@
   </style>
 </head>
 <body>
+  <div id="boot-error" style="display:none;position:fixed;inset:0;padding:32px;background:#0A0A0B;color:#fff;font-family:Arial,sans-serif;direction:rtl;z-index:9999">
+    <h2 style="color:#D4AF37">تعذر تشغيل MA-TV</h2>
+    <p id="boot-error-message">حدث خطأ أثناء تشغيل Flutter Web.</p>
+  </div>
+  <script>
+    window.addEventListener('error', function (event) {
+      var box = document.getElementById('boot-error');
+      var msg = document.getElementById('boot-error-message');
+      if (box && msg) {
+        msg.textContent = event.message || 'JavaScript startup error';
+        box.style.display = 'block';
+      }
+    });
+    window.addEventListener('unhandledrejection', function (event) {
+      var box = document.getElementById('boot-error');
+      var msg = document.getElementById('boot-error-message');
+      if (box && msg) {
+        msg.textContent = String(event.reason || 'Flutter startup promise rejected');
+        box.style.display = 'block';
+      }
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
