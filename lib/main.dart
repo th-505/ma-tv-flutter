@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -26,37 +25,11 @@ void main() {
         progress.init();
         return progress;
       },
-      child: kIsWeb ? const WebBootProbe() : const MATVApp(),
+      child: const MATVApp(),
     ),
   );
 }
 
-
-class WebBootProbe extends StatelessWidget {
-  const WebBootProbe({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        backgroundColor: Color(0xFF0A0A0B),
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.check_circle_outline, color: Color(0xFFD4AF37), size: 72),
-              SizedBox(height: 20),
-              Text('MA-TV WEB OK', style: TextStyle(color: Color(0xFFD4AF37), fontSize: 28, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              Text('Flutter engine started successfully', style: TextStyle(color: Colors.white70, fontSize: 14)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class MATVApp extends StatelessWidget {
   const MATVApp({super.key});
@@ -86,6 +59,31 @@ class MainNavigationShell extends StatefulWidget {
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
   int _currentIndex = 0;
+  final Map<int, Widget> _screenCache = {};
+
+  Widget _screenFor(int index) {
+    return _screenCache.putIfAbsent(index, () {
+      switch (index) {
+        case 0:
+          return HomeScreen(
+            onSelectContent: _openDetails,
+            onNavigateTab: (nextIndex) {
+              if (mounted) setState(() => _currentIndex = nextIndex);
+            },
+          );
+        case 1:
+          return CatalogScreen(mediaType: 'movie', onSelectContent: _openDetails);
+        case 2:
+          return CatalogScreen(mediaType: 'series', onSelectContent: _openDetails);
+        case 3:
+          return LiveTvScreen(onPlayLive: _openLivePlayer);
+        case 4:
+          return SearchScreen(onSelectContent: _openDetails);
+        default:
+          return const SettingsScreen();
+      }
+    });
+  }
 
   void _openDetails(ContentIdentity content) {
     Navigator.of(context).push(
@@ -126,24 +124,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
-    final screens = <Widget>[
-      HomeScreen(
-        onSelectContent: _openDetails,
-        onNavigateTab: (index) {
-          if (mounted) setState(() => _currentIndex = index);
-        },
-      ),
-      CatalogScreen(mediaType: 'movie', onSelectContent: _openDetails),
-      CatalogScreen(mediaType: 'series', onSelectContent: _openDetails),
-      LiveTvScreen(onPlayLive: _openLivePlayer),
-      SearchScreen(onSelectContent: _openDetails),
-      const SettingsScreen(),
-    ];
-
     return ResponsiveAppShell(
       currentIndex: _currentIndex,
       onTabSelected: (index) => setState(() => _currentIndex = index),
-      child: IndexedStack(index: _currentIndex, children: screens),
+      child: _screenFor(_currentIndex),
     );
   }
 }
