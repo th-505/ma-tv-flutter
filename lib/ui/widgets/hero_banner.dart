@@ -57,7 +57,7 @@ class HeroBanner extends StatelessWidget {
                 begin: Alignment.centerRight,
                 end: Alignment.centerLeft,
                 colors: [
-                  Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
+                  Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.9),
                   Colors.transparent,
                 ],
               ),
@@ -90,7 +90,7 @@ class HeroBanner extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                       fontFamily: 'Cairo',
                       height: 1.5,
                     ),
@@ -134,7 +134,7 @@ class HeroBanner extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(30),
                           border: Border.all(color: Colors.white24),
                         ),
