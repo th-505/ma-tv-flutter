@@ -45,7 +45,7 @@ jobs:
         run: flutter test test/playback_engines_test.dart
 
       - name: Build Web Application
-        run: flutter build web --release --target lib/web_probe.dart --base-href "/ma-tv-flutter/"
+        run: flutter build web --release --target lib/main.dart --base-href "/ma-tv-flutter/"
 
       - name: Browser Smoke Test
         run: |
