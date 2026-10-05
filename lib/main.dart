@@ -1,3 +1,4 @@
+import 'dart:ui' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -31,6 +32,19 @@ void main() {
 }
 
 
+class MATVScrollBehavior extends MaterialScrollBehavior {
+  const MATVScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => const {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.unknown,
+  };
+}
+
 class MATVApp extends StatelessWidget {
   const MATVApp({super.key});
 
@@ -40,6 +54,7 @@ class MATVApp extends StatelessWidget {
     return MaterialApp(
       title: 'MA-TV | منصة الترفيه المتكاملة',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const MATVScrollBehavior(),
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: progress.themeMode,
