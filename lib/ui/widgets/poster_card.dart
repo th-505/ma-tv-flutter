@@ -68,7 +68,8 @@ class _PosterCardState extends State<PosterCard> {
                 imageUrl: posterUrl,
                 fit: BoxFit.cover,
                 memCacheWidth: (widget.width * MediaQuery.devicePixelRatioOf(context)).round().clamp(160, 500),
-                fadeInDuration: const Duration(milliseconds: 120),
+                fadeInDuration: const Duration(milliseconds: 80),
+                useOldImageOnUrlChange: true,
                 placeholder: (_, __) => Container(
                   color: AppColors.darkElevated,
                   child: const Center(
