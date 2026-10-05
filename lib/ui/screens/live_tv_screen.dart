@@ -125,6 +125,7 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
             child: TextField(
               controller: _searchController,
               onChanged: (v) => setState(() => _searchQuery = v),
+              textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: 'ابحث عن قناة...',
                 prefixIcon: const Icon(Icons.search, color: Colors.white60),
