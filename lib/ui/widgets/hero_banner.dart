@@ -21,8 +21,11 @@ class HeroBanner extends StatelessWidget {
         ? 'https://image.tmdb.org/t/p/original${content.canonical.backdropPath}'
         : null;
 
+    final width = MediaQuery.sizeOf(context).width;
+    final desktop = width >= 900;
+
     return Container(
-      height: 420,
+      height: desktop ? 520 : 420,
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 24),
       child: Stack(
@@ -66,16 +69,16 @@ class HeroBanner extends StatelessWidget {
 
           // Content Information
           Positioned(
-            bottom: 24,
-            right: 20,
-            left: 20,
+            bottom: desktop ? 44 : 24,
+            right: desktop ? 48 : 20,
+            left: desktop ? width * 0.35 : 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   content.canonical.title,
                   style: const TextStyle(
-                    fontSize: 26,
+                    fontSize: desktop ? 38 : 26,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
                     fontFamily: 'Cairo',
@@ -86,10 +89,10 @@ class HeroBanner extends StatelessWidget {
                 if (content.canonical.overview.isNotEmpty)
                   Text(
                     content.canonical.overview,
-                    maxLines: 2,
+                    maxLines: desktop ? 3 : 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: desktop ? 15 : 13,
                       color: Colors.white.withValues(alpha: 0.8),
                       fontFamily: 'Cairo',
                       height: 1.5,
