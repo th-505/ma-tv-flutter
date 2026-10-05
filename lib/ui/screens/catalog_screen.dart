@@ -28,6 +28,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
   String? _language;
   double? _minVote;
   int? _year;
+  final TextEditingController _yearController = TextEditingController();
   String _sortBy = 'popularity.desc';
 
   final List<Map<String, String>> _filters = [
@@ -110,6 +111,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
         _loading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _yearController.dispose();
+    super.dispose();
   }
 
   @override
@@ -196,7 +203,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   SizedBox(
                     width:110,
                     child:TextField(
+                      controller:_yearController,
                       keyboardType:TextInputType.number,
+                      textInputAction:TextInputAction.done,
                       decoration:const InputDecoration(labelText:'السنة',isDense:true),
                       onChanged:(v)=>_year=int.tryParse(v),
                     ),
