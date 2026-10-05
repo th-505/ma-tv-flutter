@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -29,12 +29,10 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.x'
+          flutter-version: '3.47.x'
           channel: 'stable'
           cache: true
 
-      - name: Ensure Flutter Platform Scaffolding
-        run: flutter create --platforms=android,ios,web --project-name matv_flutter .
 
       - name: Install Dependencies
         run: flutter pub get
@@ -46,7 +44,7 @@ jobs:
         run: flutter test test/playback_engines_test.dart
 
       - name: Build Web Application
-        run: flutter build web --release --target lib/web_probe.dart --base-href "/ma-tv-flutter/" --web-renderer html --pwa-strategy=none
+        run: flutter build web --release --target lib/web_probe.dart --base-href "/ma-tv-flutter/"
 
       - name: Deploy to GitHub Pages (gh-pages)
         uses: peaceiris/actions-gh-pages@v4
