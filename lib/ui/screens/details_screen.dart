@@ -224,6 +224,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1600),
           child: CustomScrollView(
+        physics: const ClampingScrollPhysics(),
         slivers: [
           // Collapsible Backdrop App Bar
           SliverAppBar(
@@ -268,7 +269,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
           // Content Details Body
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 72 + MediaQuery.paddingOf(context).bottom),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
