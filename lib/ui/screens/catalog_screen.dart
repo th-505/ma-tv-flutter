@@ -51,7 +51,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
       language: _language,
       minVote: _minVote,
       year: _year,
-      sortBy: _sortBy,
+      sortBy: widget.mediaType == 'series' && _sortBy == 'primary_release_date.desc' ? 'first_air_date.desc' : _sortBy,
     );
     if (!mounted) return;
     setState(() {
