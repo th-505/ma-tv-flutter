@@ -77,7 +77,7 @@ class HeroBanner extends StatelessWidget {
               children: [
                 Text(
                   content.canonical.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: desktop ? 38 : 26,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
