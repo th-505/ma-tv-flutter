@@ -131,7 +131,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     final rs = sources[idx];
                     final serverConfig = ServerManager.globalServers.firstWhere((s) => s.id == rs.source.providerId);
                     return ListTile(
-                      tileColor: Colors.white.withOpacity(0.04),
+                      tileColor: Colors.white.withValues(alpha: 0.04),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       title: Text(
                         serverConfig.name,
@@ -252,7 +252,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       c.canonical.overview,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontFamily: 'Cairo',
                         height: 1.6,
                       ),
@@ -286,7 +286,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                         onPressed: _showSourcePicker,
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                          side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                         ),
@@ -550,7 +550,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                           final ep = _episodes[idx];
                           final isCurrent = _selectedEpisode?.episodeNumber == ep.episodeNumber;
                           return ListTile(
-                            tileColor: isCurrent ? AppColors.gold400.withOpacity(0.12) : AppColors.darkElevated,
+                            tileColor: isCurrent ? AppColors.gold400.withValues(alpha: 0.12) : AppColors.darkElevated,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                               side: BorderSide(color: isCurrent ? AppColors.gold400 : Colors.transparent),
