@@ -115,7 +115,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: const Text('الوضع الليلي الذهبي (Dark Gold Mode)', style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: const Text('تفعيل الثيم السينمائي الفاخر مع لمسات ذهبية مريحة للعين'),
                 value: _isDark,
-                activeColor: AppColors.gold400,
+                activeThumbColor: AppColors.gold400,
                 onChanged: (val) async {
                   setState(() => _isDark = val);
                   await _repo.setDarkMode(val);
