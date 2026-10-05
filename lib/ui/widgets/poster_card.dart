@@ -66,6 +66,8 @@ class _PosterCardState extends State<PosterCard> {
               Image.network(
                 posterUrl,
                 fit: BoxFit.cover,
+                filterQuality: FilterQuality.medium,
+                cacheWidth: MediaQuery.devicePixelRatioOf(context) > 2 ? 500 : 342,
                 errorBuilder: (_, __, ___) => _buildFallback(),
                 loadingBuilder: (_, child, progress) {
                   if (progress == null) return child;
