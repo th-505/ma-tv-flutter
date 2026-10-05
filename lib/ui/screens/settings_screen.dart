@@ -4,7 +4,6 @@ import '../../core/theme/app_theme.dart';
 import '../../core/tv/tv_remote_focus.dart';
 import '../../data/repositories/progress_repository.dart';
 import '../../data/services/proxy_service.dart';
-import '../../data/services/flare_solverr_service.dart';
 import '../../data/services/consumet_service.dart';
 
 /// Screen managing application settings, network diagnostic health tests, and persistence.
@@ -18,13 +17,11 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final ProgressRepository _repo = ProgressRepository();
   final ProxyService _proxyService = ProxyService();
-  final FlareSolverrService _flareSolverr = FlareSolverrService();
   final ConsumetService _consumet = ConsumetService();
 
   bool _isDark = true;
   bool _testingNetwork = false;
   String _proxyStatus = 'جاهز للفحص';
-  String _flareStatus = 'جاهز للفحص';
   String _consumetStatus = 'جاهز للفحص';
   int _cacheItemCount = 0;
 
@@ -50,7 +47,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _testingNetwork = true;
       _proxyStatus = 'جاري الفحص...';
-      _flareStatus = 'جاري الفحص...';
       _consumetStatus = 'جاري الفحص...';
     });
 
@@ -59,12 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final proxyOk = await _proxyService.checkProxyHealth();
     sw1.stop();
 
-    // 2. FlareSolverr Test
-    final sw2 = Stopwatch()..start();
-    final flareOk = await _flareSolverr.checkHealth();
-    sw2.stop();
-
-    // 3. Consumet Test
+    // 2. Consumet Test
     final sw3 = Stopwatch()..start();
     final consumetOk = await _consumet.checkHealth();
     sw3.stop();
@@ -73,7 +64,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _testingNetwork = false;
         _proxyStatus = proxyOk ? 'متصل (${sw1.elapsedMilliseconds} ms) ✅' : 'غير متصل (يعمل بالوضع الاحتياطي) ⚠️';
-        _flareStatus = flareOk ? 'متصل (${sw2.elapsedMilliseconds} ms) ✅' : 'غير متصل (اختياري) ℹ️';
         _consumetStatus = consumetOk ? 'متصل (${sw3.elapsedMilliseconds} ms) ✅' : 'استجابة بطيئة أو محجوب ⚠️';
       });
     }
@@ -161,7 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height:24),
 
             // Diagnostic & Servers Section
-            _buildSectionHeader('فحص خوادم البث والتخطي (Multi-Agent Diagnostics)', Icons.network_check),
+            _buildSectionHeader('فحص خدمات الشبكة والبث', Icons.network_check),
             Card(
               color: Theme.of(context).cardColor,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -170,8 +160,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   children: [
                     _buildDiagRow('خادم البروكسي (Stream Relay Proxy)', _proxyStatus),
-                    const Divider(height: 20),
-                    _buildDiagRow('تخطي الحماية (FlareSolverr Bot Engine)', _flareStatus),
                     const Divider(height: 20),
                     _buildDiagRow('خوادم Consumet للأنمي والدراما', _consumetStatus),
                     const SizedBox(height: 16),
@@ -192,7 +180,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
                               )
                             : const Icon(Icons.refresh),
-                        label: Text(_testingNetwork ? 'جاري فحص الخوادم...' : 'إعادة فحص كافة الخوادم الآن'),
+                        label: Text(_testingNetwork ? 'جاري فحص الخوادم...' : 'إعادة فحص خدمات الشبكة'),
                       ),
                     ),
                   ],
