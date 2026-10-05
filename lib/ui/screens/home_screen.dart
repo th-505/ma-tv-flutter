@@ -121,8 +121,11 @@ class _HomeScreenState extends State<HomeScreen> {
       color: AppColors.gold400,
       backgroundColor: AppColors.darkElevated,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 40),
-        child: Column(
+        padding: const EdgeInsets.only(bottom: 56),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1600),
+            child: Column(
           children: [
             // Hero Section
             if (heroItem != null)
@@ -227,6 +230,8 @@ class _HomeScreenState extends State<HomeScreen> {
               }).toList(),
             ),
           ],
+            ),
+          ),
         ),
       ),
     );
