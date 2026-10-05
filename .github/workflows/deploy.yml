@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ma-tv-web-beta-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -17,6 +17,7 @@ jobs:
   build-and-deploy-web:
     name: Build Web & Deploy to GitHub Pages
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5
@@ -36,6 +37,7 @@ jobs:
 
 
       - name: Install Dependencies
+        timeout-minutes: 10
         run: flutter pub get
 
       - name: Analyze Dart
@@ -45,7 +47,8 @@ jobs:
         run: flutter test test/playback_engines_test.dart
 
       - name: Build Web Application
-        run: flutter build web --release --target lib/main.dart --base-href "/ma-tv-flutter/" --tree-shake-icons
+        timeout-minutes: 15
+        run: flutter build web --release --target lib/main.dart --base-href "/ma-tv-flutter/" --tree-shake-icons --no-pub
 
       - name: Cache Bust Flutter Web Assets
         env:
