@@ -165,7 +165,9 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 )
               : GridView.builder(
-                  padding: const EdgeInsets.all(16),
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  physics: const ClampingScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 72 + MediaQuery.paddingOf(context).bottom),
                   gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: MediaQuery.sizeOf(context).width >= 900 ? 190 : 160,
                     childAspectRatio: 0.65,
