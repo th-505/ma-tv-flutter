@@ -128,10 +128,25 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           if (mounted) setState(() => _currentIndex = index);
         },
       ),
-      const CatalogScreen(initialType: 'movie'),
-      const CatalogScreen(initialType: 'tv'),
-      const LiveTvScreen(),
-      const SearchScreen(),
+      CatalogScreen(
+        mediaType: 'movie',
+        onSelectContent: (content) => setState(() => _selectedContent = content),
+      ),
+      CatalogScreen(
+        mediaType: 'series',
+        onSelectContent: (content) => setState(() => _selectedContent = content),
+      ),
+      LiveTvScreen(
+        onPlayLive: (name, url) {
+          // Live playback is handled separately from TMDB-backed content.
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('قناة $name جاهزة للتشغيل؛ ربط مشغل البث المباشر هو الخطوة التالية.')),
+          );
+        },
+      ),
+      SearchScreen(
+        onSelectContent: (content) => setState(() => _selectedContent = content),
+      ),
       const SettingsScreen(),
     ];
 
