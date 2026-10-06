@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 class ProxyService {
   static final ProxyService _instance = ProxyService._internal();
@@ -18,6 +19,9 @@ class ProxyService {
       'url': targetUrl,
       if (referer != null) 'referer': referer,
     };
+    if (kIsWeb) {
+      return getPublicFallbackProxyUrl(targetUrl);
+    }
     final uri = Uri.parse('$_localProxyBaseUrl/stream').replace(queryParameters: queryParams);
     return uri.toString();
   }
@@ -43,12 +47,14 @@ class ProxyService {
 
   /// Direct fetch with proxy fallback
   Future<String> fetchHtmlWithProxy(String targetUrl, {Map<String, String>? headers}) async {
-    // 1. Try local proxy
-    try {
-      final proxyUri = Uri.parse('$_localProxyBaseUrl/scrape').replace(queryParameters: {'url': targetUrl});
-      final res = await http.get(proxyUri).timeout(const Duration(seconds: 5));
-      if (res.statusCode == 200) return res.body;
-    } catch (_) {}
+    // 1. Try local proxy on native/dev builds only. GitHub Pages cannot reach a user's localhost.
+    if (!kIsWeb) {
+      try {
+        final proxyUri = Uri.parse('$_localProxyBaseUrl/scrape').replace(queryParameters: {'url': targetUrl});
+        final res = await http.get(proxyUri).timeout(const Duration(seconds: 5));
+        if (res.statusCode == 200) return res.body;
+      } catch (_) {}
+    }
 
     // 2. Direct fetch with headers
     try {
