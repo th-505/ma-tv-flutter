@@ -3,6 +3,8 @@ name: Build & Deploy MA-TV (Web to GitHub Pages, Android APK/TV, and iOS)
 on:
   push:
     branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
   workflow_dispatch:
 
 permissions:
@@ -36,6 +38,7 @@ jobs:
         run: flutter build web --release --base-href "/ma-tv-flutter/"
 
       - name: Deploy to GitHub Pages (gh-pages)
+        if: github.event_name != 'pull_request'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
