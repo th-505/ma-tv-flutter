@@ -28,10 +28,6 @@ class MATVApp extends StatefulWidget {
 class _MATVAppState extends State<MATVApp> {
   final ProgressRepository _repo = ProgressRepository();
   bool _isDark = true;
-  ContentIdentity? _selectedContent;
-  PlaybackSource? _playbackSource;
-  List<RankedSource> _playbackSources = const [];
-  EpisodeIdentity? _selectedEpisode;
 
   @override
   void initState() {
@@ -91,6 +87,10 @@ class MainNavigationShell extends StatefulWidget {
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
   int _currentIndex = 0;
+  ContentIdentity? _selectedContent;
+  PlaybackSource? _playbackSource;
+  List<RankedSource> _playbackSources = const [];
+  EpisodeIdentity? _selectedEpisode;
 
   @override
   Widget build(BuildContext context) {
@@ -138,10 +138,28 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       ),
       LiveTvScreen(
         onPlayLive: (name, url) {
-          // Live playback is handled separately from TMDB-backed content.
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('قناة $name جاهزة للتشغيل؛ ربط مشغل البث المباشر هو الخطوة التالية.')),
+          final liveContent = ContentIdentity(
+            tmdbId: -1,
+            mediaType: 'live',
+            canonical: CanonicalData(
+              title: name,
+              overview: 'بث مباشر',
+            ),
           );
+          final liveSource = PlaybackSource(
+            providerId: 'live-tv',
+            sourceId: 'live-${url.hashCode}',
+            url: url,
+            quality: 'LIVE',
+          );
+          setState(() {
+            _selectedContent = liveContent;
+            _playbackSource = liveSource;
+            _playbackSources = [
+              RankedSource(source: liveSource, rank: 1, score: 100),
+            ];
+            _selectedEpisode = null;
+          });
         },
       ),
       SearchScreen(
