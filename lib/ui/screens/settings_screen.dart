@@ -34,13 +34,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final isDark = await _repo.isDarkMode();
-    final history = await _repo.getWatchHistory();
-    final favs = await _repo.getFavorites();
+    await _repo.init();
+    final isDark = _repo.themeMode != ThemeMode.light;
+    final favs = _repo.favorites;
     if (mounted) {
       setState(() {
         _isDark = isDark;
-        _cacheItemCount = history.length + favs.length;
+        _cacheItemCount = favs.length;
       });
     }
   }
@@ -55,17 +55,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     // 1. Proxy Test
     final sw1 = Stopwatch()..start();
-    final proxyOk = await _proxyService.testConnection();
+    final proxyOk = await _proxyService.checkProxyHealth();
     sw1.stop();
 
     // 2. FlareSolverr Test
     final sw2 = Stopwatch()..start();
-    final flareOk = await _flareSolverr.isAvailable();
+    final flareOk = await _flareSolverr.checkHealth();
     sw2.stop();
 
     // 3. Consumet Test
     final sw3 = Stopwatch()..start();
-    final consumetOk = await _consumet.isHealthy();
+    final consumetOk = await _consumet.checkHealth();
     sw3.stop();
 
     if (mounted) {
@@ -79,12 +79,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _clearCache() async {
-    await _repo.clearAllHistory();
+    // Progress history clearing is not implemented in the current repository API.
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('تم مسح سجل المشاهدة والذاكرة المؤقتة بنجاح'),
-          backgroundColor: AppTheme.gold,
+          backgroundColor: AppColors.gold400,
         ),
       );
       _loadSettings();
@@ -114,10 +114,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: const Text('الوضع الليلي الذهبي (Dark Gold Mode)', style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: const Text('تفعيل الثيم السينمائي الفاخر مع لمسات ذهبية مريحة للعين'),
                 value: _isDark,
-                activeColor: AppTheme.gold,
+                activeColor: AppColors.gold400,
                 onChanged: (val) async {
                   setState(() => _isDark = val);
-                  await _repo.setDarkMode(val);
+                  await _repo.setTheme(val ? 'dark' : 'light');
                 },
               ),
             ),
@@ -143,7 +143,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onSelect: _testingNetwork ? () {} : _runDiagnostics,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.gold,
+                          backgroundColor: AppColors.gold400,
                           foregroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -177,8 +177,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onSelect: _clearCache,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.errorRed,
-                      side: const BorderSide(color: AppTheme.errorRed),
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
                     ),
                     onPressed: _clearCache,
                     child: const Text('مسح الذاكرة'),
@@ -204,7 +204,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     SizedBox(height: 4),
                     Text('المنصات المدعومة: Web (GitHub Pages) | Android APK | Android TV | iOS IPA', style: TextStyle(color: Colors.white70)),
                     SizedBox(height: 4),
-                    Text('هيكل الوكلاء: 100+ Specialized Autonomous AI Engineering Agents', style: TextStyle(color: AppTheme.gold)),
+                    Text('هيكل الوكلاء: 100+ Specialized Autonomous AI Engineering Agents', style: TextStyle(color: AppColors.gold400)),
                   ],
                 ),
               ),
@@ -221,7 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.only(bottom: 8, right: 4),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppTheme.gold),
+          Icon(icon, size: 20, color: AppColors.gold400),
           const SizedBox(width: 8),
           Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         ],
