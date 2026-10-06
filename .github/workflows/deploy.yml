@@ -2,7 +2,7 @@ name: MA-TV Web Beta
 
 on:
   push:
-    branches: [ main, parity-rebuild-1, web-performance-next ]
+    branches: [ main, parity-rebuild-1, web-performance-next, integration/full-platform-ci ]
   workflow_dispatch:
 
 concurrency:
@@ -142,3 +142,65 @@ jobs:
           path: pages-live-smoke.png
           retention-days: 3
 
+
+
+  build-android:
+    name: Build Android Phone & TV APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.x'
+          channel: 'stable'
+          cache: true
+      - name: Regenerate Android Platform
+        run: flutter create --platforms=android --org com.matv --project-name matv_flutter .
+      - name: Install Dependencies
+        run: flutter pub get
+      - name: Build Android APK
+        run: flutter build apk --release
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MA-TV-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-ios:
+    name: Build iOS Unsigned IPA
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.x'
+          channel: 'stable'
+          cache: true
+      - name: Regenerate iOS Platform
+        run: flutter create --platforms=ios --org com.matv --project-name matv_flutter .
+      - name: Install Dependencies
+        run: flutter pub get
+      - name: Build iOS
+        run: flutter build ios --release --no-codesign
+      - name: Package Unsigned IPA
+        run: |
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -R Runner.app Payload/
+          zip -r MA-TV-Unsigned.ipa Payload
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: MA-TV-Release-IPA
+          path: build/ios/iphoneos/MA-TV-Unsigned.ipa
