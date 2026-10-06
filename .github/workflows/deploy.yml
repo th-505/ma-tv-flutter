@@ -30,18 +30,16 @@ jobs:
           cache: true
 
       - name: Install Dependencies
-        working-directory: matv_flutter
         run: flutter pub get
 
       - name: Build Web Application
-        working-directory: matv_flutter
-        run: flutter build web --release --base-href "/MA-TV/"
+        run: flutter build web --release --base-href "/ma-tv-flutter/"
 
       - name: Deploy to GitHub Pages (gh-pages)
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: matv_flutter/build/web
+          publish_dir: build/web
           publish_branch: gh-pages
 
   build-android:
@@ -65,18 +63,16 @@ jobs:
           cache: true
 
       - name: Install Dependencies
-        working-directory: matv_flutter
         run: flutter pub get
 
       - name: Build Android APK
-        working-directory: matv_flutter
         run: flutter build apk --release
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MA-TV-Release-APK
-          path: matv_flutter/build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
 
   build-ios:
     name: Build iOS IPA Bundle
@@ -93,15 +89,12 @@ jobs:
           cache: true
 
       - name: Install Dependencies
-        working-directory: matv_flutter
         run: flutter pub get
 
       - name: Build iOS No-Codesign
-        working-directory: matv_flutter
         run: flutter build ios --release --no-codesign
 
       - name: Package Payload to IPA
-        working-directory: matv_flutter
         run: |
           mkdir -p build/ios/iphoneos/Payload
           cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
@@ -112,4 +105,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MA-TV-Release-IPA
-          path: matv_flutter/build/ios/iphoneos/MA-TV-Unsigned.ipa
+          path: build/ios/iphoneos/MA-TV-Unsigned.ipa
