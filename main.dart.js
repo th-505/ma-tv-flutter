@@ -98717,7 +98717,7 @@ $S:639}
 A.kt.prototype={
 a8(){return new A.YI()}}
 A.YI.prototype={
-G(a){var s,r,q,p,o,n,m,l=this,k=null,j=l.a,i=j.c.c.c,h=i!=null?"https://image.tmdb.org/t/p/w500"+i:k
+G(a){var s,r,q,p,o,n,m,l=this,k=null,j=l.a,i=j.c.c.c,h=i!=null?"https://image.tmdb.org/t/p/w342"+i:k
 i=l.d
 s=i?1.045:1
 j=j.d
