@@ -1,112 +1,99 @@
-name: Build & Deploy MA-TV (Web to GitHub Pages, Android APK/TV, and iOS)
+name: Build & Deploy MA-TV
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build-and-deploy-web:
-    name: Build Web & Deploy to GitHub Pages
+  web:
+    name: Build Web
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.x'
-          channel: 'stable'
+          flutter-version: '3.22.3'
+          channel: stable
           cache: true
-
-      - name: Install Dependencies
+      - name: Dependencies
         run: flutter pub get
-
-      - name: Build Web Application
+      - name: Build Web
         run: flutter build web --release --base-href "/ma-tv-flutter/"
-
-      - name: Deploy to GitHub Pages (gh-pages)
-        if: github.event_name != 'pull_request'
+      - name: Verify Web Output
+        run: |
+          test -f build/web/index.html
+          test -f build/web/main.dart.js
+          test -f build/web/flutter_bootstrap.js
+      - name: Deploy GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: build/web
           publish_branch: gh-pages
 
-  build-android:
+  android:
     name: Build Android Phone & TV APK
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: zulu
           java-version: '17'
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.x'
-          channel: 'stable'
+          flutter-version: '3.22.3'
+          channel: stable
           cache: true
-
-      - name: Install Dependencies
-        run: flutter pub get      - name: Regenerate missing Android platform files
+      - name: Regenerate Android Platform
         run: flutter create --platforms=android --org com.matv --project-name matv_flutter .
-
-      - name: Build Android APK
+      - name: Dependencies
+        run: flutter pub get
+      - name: Build APK
         run: flutter build apk --release
-
-      - name: Upload Android APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: MA-TV-Release-APK
           path: build/app/outputs/flutter-apk/app-release.apk
 
-  build-ios:
-    name: Build iOS IPA Bundle
+  ios:
+    name: Build iOS Unsigned IPA
     runs-on: macos-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.x'
-          channel: 'stable'
+          flutter-version: '3.22.3'
+          channel: stable
           cache: true
-
-      - name: Install Dependencies
-        run: flutter pub get      - name: Regenerate missing iOS platform files
+      - name: Regenerate iOS Platform
         run: flutter create --platforms=ios --org com.matv --project-name matv_flutter .
-
-      - name: Build iOS No-Codesign
+      - name: Dependencies
+        run: flutter pub get
+      - name: Build iOS
         run: flutter build ios --release --no-codesign
-
-      - name: Package Payload to IPA
+      - name: Package Unsigned IPA
         run: |
-          mkdir -p build/ios/iphoneos/Payload
-          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
           cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -R Runner.app Payload/
           zip -r MA-TV-Unsigned.ipa Payload
-
-      - name: Upload iOS IPA Artifact
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: MA-TV-Release-IPA
