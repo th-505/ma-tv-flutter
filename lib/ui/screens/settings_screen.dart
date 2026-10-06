@@ -139,7 +139,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildDiagRow('خوادم Consumet للأنمي والدراما', _consumetStatus),
                     const SizedBox(height: 16),
                     TvFocusableWidget(
-                      autofocus: false,
                       onSelect: _testingNetwork ? () {} : _runDiagnostics,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
