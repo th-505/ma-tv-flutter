@@ -70,11 +70,8 @@ class _PosterCardState extends State<PosterCard> {
                 memCacheWidth: (widget.width * MediaQuery.devicePixelRatioOf(context)).round().clamp(160, 500),
                 fadeInDuration: const Duration(milliseconds: 80),
                 useOldImageOnUrlChange: true,
-                placeholder: (_, __) => Container(
+                placeholder: (_, __) => const ColoredBox(
                   color: AppColors.darkElevated,
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold400),
-                  ),
                 ),
                 errorWidget: (_, __, ___) => _buildFallback(),
               )
