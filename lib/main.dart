@@ -7,6 +7,10 @@ import 'ui/screens/catalog_screen.dart';
 import 'ui/screens/live_tv_screen.dart';
 import 'ui/screens/search_screen.dart';
 import 'ui/screens/settings_screen.dart';
+import 'ui/screens/details_screen.dart';
+import 'ui/screens/player_screen.dart';
+import 'domain/models/content_identity.dart';
+import 'domain/models/playback_source.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +28,10 @@ class MATVApp extends StatefulWidget {
 class _MATVAppState extends State<MATVApp> {
   final ProgressRepository _repo = ProgressRepository();
   bool _isDark = true;
+  ContentIdentity? _selectedContent;
+  PlaybackSource? _playbackSource;
+  List<RankedSource> _playbackSources = const [];
+  EpisodeIdentity? _selectedEpisode;
 
   @override
   void initState() {
@@ -32,16 +40,16 @@ class _MATVAppState extends State<MATVApp> {
   }
 
   Future<void> _loadThemePreference() async {
-    final dark = await _repo.isDarkMode();
+    await _repo.init();
     if (mounted) {
-      setState(() => _isDark = dark);
+      setState(() => _isDark = _repo.themeMode != ThemeMode.light);
     }
   }
 
   void _toggleTheme() async {
     final newDark = !_isDark;
     setState(() => _isDark = newDark);
-    await _repo.setDarkMode(newDark);
+    await _repo.setTheme(newDark ? 'dark' : 'light');
   }
 
   @override
@@ -86,8 +94,36 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (_playbackSource != null && _selectedContent != null) {
+      return PlayerScreen(
+        identity: _selectedContent!,
+        source: _playbackSource!,
+        allSources: _playbackSources,
+        episode: _selectedEpisode,
+        onBack: () => setState(() {
+          _playbackSource = null;
+          _playbackSources = const [];
+          _selectedEpisode = null;
+        }),
+      );
+    }
+
+    if (_selectedContent != null) {
+      return DetailsScreen(
+        content: _selectedContent!,
+        onBack: () => setState(() => _selectedContent = null),
+        onPlay: (content, source, sources, episode) => setState(() {
+          _selectedContent = content;
+          _playbackSource = source;
+          _playbackSources = sources;
+          _selectedEpisode = episode;
+        }),
+      );
+    }
+
     final screens = <Widget>[
       HomeScreen(
+        onSelectContent: (content) => setState(() => _selectedContent = content),
         onNavigateTab: (index) {
           if (mounted) setState(() => _currentIndex = index);
         },
@@ -101,7 +137,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
     return ResponsiveAppShell(
       currentIndex: _currentIndex,
-      onDestinationSelected: (index) {
+      onTabSelected: (index) {
         setState(() => _currentIndex = index);
       },
       child: IndexedStack(
