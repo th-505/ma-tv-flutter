@@ -29,7 +29,7 @@ class _PosterCardState extends State<PosterCard> {
   @override
   Widget build(BuildContext context) {
     final posterUrl = widget.identity.canonical.posterPath != null
-        ? 'https://image.tmdb.org/t/p/w500${widget.identity.canonical.posterPath}'
+        ? 'https://image.tmdb.org/t/p/w342${widget.identity.canonical.posterPath}'
         : null;
 
     return MouseRegion(
@@ -68,7 +68,7 @@ class _PosterCardState extends State<PosterCard> {
                 imageUrl: posterUrl,
                 fit: BoxFit.cover,
                 // The card is at most ~135 logical px wide. Capping decoded posters
-                // below TMDB's 500px source reduces browser decode/GPU memory while
+                // alongside TMDB's smaller w342 source reduces transfer/decode/GPU memory while
                 // retaining enough pixels for high-DPI displays.
                 memCacheWidth: (widget.width * MediaQuery.devicePixelRatioOf(context)).round().clamp(160, 360),
                 fadeInDuration: Duration.zero,
