@@ -45,7 +45,6 @@ class AppTheme {
       primary: AppColors.gold400,
       secondary: AppColors.gold300,
       surface: AppColors.darkElevated,
-      background: AppColors.darkBg,
       error: AppColors.error,
     ),
     appBarTheme: const AppBarTheme(
@@ -58,7 +57,7 @@ class AppTheme {
         fontWeight: FontWeight.bold,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: AppColors.darkElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -76,7 +75,6 @@ class AppTheme {
       primary: AppColors.gold600,
       secondary: AppColors.gold500,
       surface: AppColors.lightElevated,
-      background: AppColors.lightBg,
       error: AppColors.error,
     ),
     appBarTheme: const AppBarTheme(
@@ -89,7 +87,7 @@ class AppTheme {
         fontWeight: FontWeight.bold,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: AppColors.lightElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),

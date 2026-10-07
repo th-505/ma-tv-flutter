@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/models/content_identity.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/tv/tv_remote_focus.dart';
@@ -18,11 +19,17 @@ class HeroBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final backdrop = content.canonical.backdropPath != null
-        ? 'https://image.tmdb.org/t/p/original${content.canonical.backdropPath}'
+        ? 'https://image.tmdb.org/t/p/w1280${content.canonical.backdropPath}'
         : null;
 
-    return Container(
-      height: 420,
+    final width = MediaQuery.sizeOf(context).width;
+    final desktop = width >= 900;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final localWidth = constraints.maxWidth;
+        return Container(
+      height: desktop ? 520 : 420,
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 24),
       child: Stack(
@@ -30,10 +37,13 @@ class HeroBanner extends StatelessWidget {
         children: [
           // Background Image
           if (backdrop != null)
-            Image.network(
-              backdrop,
+            CachedNetworkImage(
+              imageUrl: backdrop,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: AppColors.darkElevated),
+              memCacheWidth: desktop ? 1280 : 780,
+              fadeInDuration: const Duration(milliseconds: 150),
+              placeholder: (_, __) => Container(color: AppColors.darkElevated),
+              errorWidget: (_, __, ___) => Container(color: AppColors.darkElevated),
             )
           else
             Container(color: AppColors.darkElevated),
@@ -57,7 +67,7 @@ class HeroBanner extends StatelessWidget {
                 begin: Alignment.centerRight,
                 end: Alignment.centerLeft,
                 colors: [
-                  Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
+                  Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.9),
                   Colors.transparent,
                 ],
               ),
@@ -66,16 +76,16 @@ class HeroBanner extends StatelessWidget {
 
           // Content Information
           Positioned(
-            bottom: 24,
-            right: 20,
-            left: 20,
+            bottom: desktop ? 44 : 24,
+            right: desktop ? 48 : 20,
+            left: desktop ? localWidth * 0.35 : 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   content.canonical.title,
-                  style: const TextStyle(
-                    fontSize: 26,
+                  style: TextStyle(
+                    fontSize: desktop ? 38 : 26,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
                     fontFamily: 'Cairo',
@@ -86,11 +96,11 @@ class HeroBanner extends StatelessWidget {
                 if (content.canonical.overview.isNotEmpty)
                   Text(
                     content.canonical.overview,
-                    maxLines: 2,
+                    maxLines: desktop ? 3 : 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withOpacity(0.8),
+                      fontSize: desktop ? 15 : 13,
+                      color: Colors.white.withValues(alpha: 0.8),
                       fontFamily: 'Cairo',
                       height: 1.5,
                     ),
@@ -98,7 +108,9 @@ class HeroBanner extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Action Buttons
-                Row(
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
                   children: [
                     TvFocusableWidget(
                       onSelect: onPlay,
@@ -127,14 +139,13 @@ class HeroBanner extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
                     TvFocusableWidget(
                       onSelect: onDetails,
                       borderRadius: BorderRadius.circular(30),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(30),
                           border: Border.all(color: Colors.white24),
                         ),
@@ -163,6 +174,8 @@ class HeroBanner extends StatelessWidget {
           ),
         ],
       ),
+    );
+      },
     );
   }
 }

@@ -1,0 +1,5 @@
+enum AlignmentMethod { cachedOffset, durationComparison, segmentLandmark, audioLandmark, sceneLandmark }
+class AlignmentResult { final double offsetSeconds,confidence; final AlignmentMethod method; const AlignmentResult({required this.offsetSeconds,required this.confidence,required this.method}); }
+class AlignmentCacheEntry { final String sourceProviderId,targetProviderId; final int contentId; final double offsetSeconds,confidence; final AlignmentMethod method; final DateTime cachedAt; const AlignmentCacheEntry({required this.sourceProviderId,required this.targetProviderId,required this.contentId,required this.offsetSeconds,required this.confidence,required this.method,required this.cachedAt}); }
+class PlaybackProgress { final int contentId; final double position,duration; final bool completed; final DateTime updatedAt; final String? providerId,sourceId; const PlaybackProgress({required this.contentId,required this.position,required this.duration,required this.completed,required this.updatedAt,this.providerId,this.sourceId}); }
+const double completionThreshold=0.95;

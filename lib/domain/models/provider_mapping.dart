@@ -1,0 +1,5 @@
+enum MappingMethod { tmdbId, imdbId, titleSearch, urlKey }
+enum ConfidenceLevel { auto, suggested, reject }
+ConfidenceLevel classifyConfidence(double score)=>score>=85?ConfidenceLevel.auto:score>=60?ConfidenceLevel.suggested:ConfidenceLevel.reject;
+class ProviderMapping { final String providerId,contentType,providerItemId,matchedTitle; final int tmdbId; final String? imdbId,providerUrlKey; final int? matchedYear; final double confidence; final MappingMethod method; final DateTime verifiedAt,expiresAt; const ProviderMapping({required this.providerId,required this.tmdbId,this.imdbId,required this.contentType,required this.providerItemId,this.providerUrlKey,required this.matchedTitle,this.matchedYear,required this.confidence,required this.method,required this.verifiedAt,required this.expiresAt}); }
+class MatchFactors { final String? originalTitle,arabicTitle,mediaType,imdbId; final List<String>? alternativeTitles; final int? year,season,episode; const MatchFactors({this.originalTitle,this.arabicTitle,this.alternativeTitles,this.year,this.mediaType,this.season,this.episode,this.imdbId}); }

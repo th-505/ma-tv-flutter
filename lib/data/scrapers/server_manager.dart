@@ -1,5 +1,7 @@
 import '../../domain/models/content_identity.dart';
 import '../../domain/models/playback_source.dart';
+import '../../core/playback/quick_play_ranking.dart';
+import '../../core/playback/provider_health_engine.dart';
 
 class EmbedServerConfig {
   final String id;
@@ -20,6 +22,14 @@ class EmbedServerConfig {
 }
 
 class ServerManager {
+  static final ProviderHealthEngine health = ProviderHealthEngine();
+  static final Map<String, ProviderPerformanceProfile> performance = {};
+
+  static void recordPlayback(String providerId, {required bool success, required int latencyMs}) {
+    final profile = performance.putIfAbsent(providerId, () => ProviderPerformanceProfile(providerId: providerId));
+    profile.record(success: success, latencyMs: latencyMs);
+    if (success) { health.recordSuccess(providerId); } else { health.recordFailure(providerId); }
+  }
   static const List<EmbedServerConfig> globalServers = [
     EmbedServerConfig(
       id: 'vidsrc-su',
@@ -143,31 +153,49 @@ class ServerManager {
     ),
   ];
 
-  static List<RankedSource> buildSources(ContentIdentity identity, {int? season, int? episode}) {
+  static List<RankedSource> buildSources(ContentIdentity identity, {int? season, int? episode, String preferredQuality = 'auto'}) {
     final s = season ?? 1;
     final e = episode ?? 1;
     final id = identity.tmdbId.toString();
 
-    return globalServers.map((server) {
+    final candidates = globalServers.where((server) => health.canAttempt(server.id)).map((server) {
       final isSeries = identity.mediaType == 'series';
       final pattern = isSeries ? server.seriesPattern : server.moviePattern;
-      final url = pattern
-          .replaceAll('{id}', id)
-          .replaceAll('{s}', s.toString())
-          .replaceAll('{e}', e.toString());
-
-      return RankedSource(
-        source: PlaybackSource(
-          providerId: server.id,
-          sourceId: '${server.id}-$id',
-          url: url,
-          quality: '1080p',
-          embedUrl: url,
-        ),
-        rank: server.priority,
-        score: 100 - (server.priority * 2),
-        healthStatus: 'READY',
+      final url = pattern.replaceAll('{id}', id).replaceAll('{s}', s.toString()).replaceAll('{e}', e.toString());
+      return PlaybackSource(
+        providerId: server.id,
+        sourceId: '${server.id}-$id-$s-$e',
+        url: url,
+        quality: '1080p',
+        embedUrl: url,
+        qualityConfidence: QualityConfidence.providerDeclared,
       );
     }).toList();
+
+    final ranked=QuickPlayRanking.rank(candidates, performance);
+    if(preferredQuality=='auto') return ranked;
+    int distance(String quality){
+      int value(String q){
+        final v=q.toLowerCase();
+        if(v.contains('2160')||v.contains('4k')) return 2160;
+        if(v.contains('1080')) return 1080;
+        if(v.contains('720')) return 720;
+        if(v.contains('480')) return 480;
+        if(v.contains('360')) return 360;
+        return 0;
+      }
+      return (value(quality)-value(preferredQuality)).abs();
+    }
+    ranked.sort((a,b){
+      final healthA=a.healthStatus.toUpperCase()=='UNHEALTHY'?1:0;
+      final healthB=b.healthStatus.toUpperCase()=='UNHEALTHY'?1:0;
+      final health=healthA.compareTo(healthB);
+      if(health!=0)return health;
+      final quality=distance(a.source.quality).compareTo(distance(b.source.quality));
+      if(quality!=0)return quality;
+      return b.score.compareTo(a.score);
+    });
+    for(var i=0;i<ranked.length;i++){ranked[i].rank=i+1;}
+    return ranked;
   }
 }

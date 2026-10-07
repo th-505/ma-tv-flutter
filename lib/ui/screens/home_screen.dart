@@ -23,10 +23,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TmdbService _tmdb = TmdbService();
   bool _loading = true;
+  bool _loadFailed = false;
+  int _loadSerial = 0;
 
   List<ContentIdentity> _trendingMovies = [];
   List<ContentIdentity> _trendingSeries = [];
   List<ContentIdentity> _topRated = [];
+  List<ContentIdentity> _nowPlaying = [];
+  List<ContentIdentity> _onTheAir = [];
   List<ContentIdentity> _arabicContent = [];
   List<ContentIdentity> _turkishContent = [];
   List<ContentIdentity> _koreanContent = [];
@@ -39,32 +43,46 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _loading = true);
+    final serial = ++_loadSerial;
+    setState(() {
+      _loading = true;
+      _loadFailed = false;
+    });
     try {
       final results = await Future.wait([
         _tmdb.getTrending(type: 'movie'),
         _tmdb.getTrending(type: 'tv'),
         _tmdb.getTopRatedMovies(),
+        _tmdb.getNowPlayingMovies(),
+        _tmdb.getOnTheAirSeries(),
         _tmdb.getByLanguage('ar', type: 'movie'),
         _tmdb.getByLanguage('tr', type: 'tv'),
         _tmdb.getByLanguage('ko', type: 'tv'),
         _tmdb.getAnime(),
       ]);
 
-      if (mounted) {
+      if (mounted && serial == _loadSerial) {
         setState(() {
           _trendingMovies = results[0];
           _trendingSeries = results[1];
           _topRated = results[2];
-          _arabicContent = results[3];
-          _turkishContent = results[4];
-          _koreanContent = results[5];
-          _animeContent = results[6];
+          _nowPlaying = results[3];
+          _onTheAir = results[4];
+          _arabicContent = results[5];
+          _turkishContent = results[6];
+          _koreanContent = results[7];
+          _animeContent = results[8];
+          _loadFailed = results.every((items) => items.isEmpty);
           _loading = false;
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && serial == _loadSerial) {
+        setState(() {
+          _loading = false;
+          _loadFailed = true;
+        });
+      }
     }
   }
 
@@ -76,15 +94,48 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    if (_loadFailed) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off, color: AppColors.gold400, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'تعذر تحميل محتوى TMDB',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _loadData,
+              icon: const Icon(Icons.refresh),
+              label: const Text('إعادة المحاولة'),
+            ),
+          ],
+        ),
+      );
+    }
+
     final heroItem = _trendingMovies.isNotEmpty ? _trendingMovies.first : (_trendingSeries.isNotEmpty ? _trendingSeries.first : null);
 
     return RefreshIndicator(
       onRefresh: _loadData,
+      notificationPredicate: (notification) => notification.depth == 0,
       color: AppColors.gold400,
       backgroundColor: AppColors.darkElevated,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 40),
-        child: Column(
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+        primary: true,
+        physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.only(
+          bottom: 72 + MediaQuery.paddingOf(context).bottom,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1600),
+            child: Column(
           children: [
             // Hero Section
             if (heroItem != null)
@@ -116,6 +167,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => widget.onSelectContent(item),
                 );
               }).toList(),
+            ),
+
+            ContentRail(
+              title: 'يعرض الآن',
+              onSeeAll: () => widget.onNavigateTab(1),
+              children: _nowPlaying.map((item) => PosterCard(identity: item, onTap: () => widget.onSelectContent(item))).toList(),
+            ),
+            ContentRail(
+              title: 'مسلسلات على الهواء',
+              onSeeAll: () => widget.onNavigateTab(2),
+              children: _onTheAir.map((item) => PosterCard(identity: item, onTap: () => widget.onSelectContent(item))).toList(),
             ),
 
             // Top Rated Movies
@@ -178,7 +240,10 @@ class _HomeScreenState extends State<HomeScreen> {
               }).toList(),
             ),
           ],
+            ),
+          ),
         ),
+      ),
       ),
     );
   }

@@ -15,8 +15,8 @@ class CustomBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isGold ? AppColors.gold400.withOpacity(0.15) : (color?.withOpacity(0.15) ?? Colors.white.withOpacity(0.08));
-    final border = isGold ? AppColors.gold400.withOpacity(0.4) : (color?.withOpacity(0.4) ?? Colors.white.withOpacity(0.15));
+    final bg = isGold ? AppColors.gold400.withValues(alpha: 0.15) : (color?.withValues(alpha: 0.15) ?? Colors.white.withValues(alpha: 0.08));
+    final border = isGold ? AppColors.gold400.withValues(alpha: 0.4) : (color?.withValues(alpha: 0.4) ?? Colors.white.withValues(alpha: 0.15));
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

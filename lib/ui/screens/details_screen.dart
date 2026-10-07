@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../domain/models/content_identity.dart';
@@ -8,7 +9,6 @@ import '../../data/scrapers/server_manager.dart';
 import '../../data/repositories/progress_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../widgets/custom_badge.dart';
-import '../../core/tv/tv_remote_focus.dart';
 
 class DetailsScreen extends StatefulWidget {
   final ContentIdentity content;
@@ -32,44 +32,112 @@ class _DetailsScreenState extends State<DetailsScreen> {
   EpisodeIdentity? _selectedEpisode;
   List<EpisodeIdentity> _episodes = [];
   bool _loadingEpisodes = false;
+  bool _episodesFailed = false;
+  bool _loadingDetails = true;
+  bool _detailsFailed = false;
+  int _seasonRequestSerial = 0;
+  Map<String, dynamic>? _details;
+  List<ContentIdentity> _recommendations = [];
+  List<ContentIdentity> _similar = [];
+  List<int> _seasons = const [1];
 
   @override
   void initState() {
     super.initState();
+    _loadDetails();
     if (widget.content.mediaType == 'series') {
       _loadSeason(_selectedSeason);
     }
   }
 
-  Future<void> _loadSeason(int season) async {
-    setState(() => _loadingEpisodes = true);
-    final eps = await _tmdb.getSeasonEpisodes(widget.content.tmdbId, season);
+  Future<void> _loadDetails() async {
     if (mounted) {
+      setState(() {
+        _loadingDetails = true;
+        _detailsFailed = false;
+      });
+    }
+    final isSeries = widget.content.mediaType == 'series';
+    final results = await Future.wait<dynamic>([
+      isSeries ? _tmdb.getSeriesDetails(widget.content.tmdbId) : _tmdb.getMovieDetails(widget.content.tmdbId),
+      _tmdb.getRecommendations(widget.content.tmdbId, isSeries ? 'tv' : 'movie'),
+      _tmdb.getSimilar(widget.content.tmdbId, isSeries ? 'tv' : 'movie'),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _details = results[0] as Map<String, dynamic>?;
+      _detailsFailed = _details == null;
+      _recommendations = results[1] as List<ContentIdentity>;
+      _similar = results[2] as List<ContentIdentity>;
+      final rawSeasons = (_details?['seasons'] as List<dynamic>?) ?? const [];
+      _seasons = rawSeasons
+          .where((s) => s is Map && s['season_number'] is int && s['season_number'] > 0)
+          .map<int>((s) => s['season_number'] as int)
+          .toList();
+      if (_seasons.isEmpty) _seasons = const [1];
+      _loadingDetails = false;
+    });
+  }
+
+  Future<void> _loadSeason(int season) async {
+    final serial = ++_seasonRequestSerial;
+    setState(() {
+      _loadingEpisodes = true;
+      _episodesFailed = false;
+    });
+    final eps = await _tmdb.getSeasonEpisodes(widget.content.tmdbId, season);
+    if (mounted && serial == _seasonRequestSerial && season == _selectedSeason) {
       setState(() {
         _episodes = eps;
         _selectedEpisode = eps.isNotEmpty ? eps.first : null;
+        _episodesFailed = eps.isEmpty;
         _loadingEpisodes = false;
       });
     }
   }
 
   void _handleQuickPlay() {
+    if (widget.content.mediaType == 'series' && _selectedEpisode == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اختر حلقة متاحة أولاً')),
+      );
+      return;
+    }
     final sources = ServerManager.buildSources(
       widget.content,
       season: _selectedSeason,
       episode: _selectedEpisode?.episodeNumber ?? 1,
+      preferredQuality: context.read<ProgressRepository>().preferredQuality,
     );
     if (sources.isNotEmpty) {
       widget.onPlay(widget.content, sources.first.source, sources, _selectedEpisode);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يوجد سيرفر مشاهدة متاح حالياً')),
+      );
     }
   }
 
   void _showSourcePicker() {
+    if (widget.content.mediaType == 'series' && _selectedEpisode == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اختر حلقة متاحة أولاً')),
+      );
+      return;
+    }
     final sources = ServerManager.buildSources(
       widget.content,
       season: _selectedSeason,
       episode: _selectedEpisode?.episodeNumber ?? 1,
+      preferredQuality: context.read<ProgressRepository>().preferredQuality,
     );
+
+    if (sources.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يوجد سيرفر مشاهدة متاح حالياً')),
+      );
+      return;
+    }
 
     showModalBottomSheet(
       context: context,
@@ -77,10 +145,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      isScrollControlled: true,
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.72,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -101,17 +173,18 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, idx) {
                     final rs = sources[idx];
-                    final serverConfig = ServerManager.globalServers[idx];
+                    final matching = ServerManager.globalServers.where((s) => s.id == rs.source.providerId);
+                    final serverConfig = matching.isEmpty ? null : matching.first;
                     return ListTile(
-                      tileColor: Colors.white.withOpacity(0.04),
+                      tileColor: Colors.white.withValues(alpha: 0.04),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       title: Text(
-                        serverConfig.name,
+                        serverConfig?.name ?? rs.source.providerId,
                         style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Cairo', fontSize: 13),
                       ),
                       trailing: CustomBadge(
                         isGold: idx < 3,
-                        child: Text(serverConfig.badge),
+                        child: Text(serverConfig?.badge ?? rs.source.quality),
                       ),
                       onTap: () {
                         Navigator.pop(context);
@@ -122,6 +195,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 ),
               ),
             ],
+              ),
+            ),
           ),
         );
       },
@@ -139,15 +214,21 @@ class _DetailsScreenState extends State<DetailsScreen> {
     final isFav = progress.isFavorite(widget.content.tmdbId);
     final c = widget.content;
     final backdrop = c.canonical.backdropPath != null
-        ? 'https://image.tmdb.org/t/p/original${c.canonical.backdropPath}'
+        ? 'https://image.tmdb.org/t/p/w1280${c.canonical.backdropPath}'
         : null;
 
+    final webWide = MediaQuery.sizeOf(context).width >= 900;
+
     return Scaffold(
-      body: CustomScrollView(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1600),
+          child: CustomScrollView(
+        physics: const ClampingScrollPhysics(),
         slivers: [
           // Collapsible Backdrop App Bar
           SliverAppBar(
-            expandedHeight: 320,
+            expandedHeight: webWide ? 460 : 320,
             pinned: true,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -158,7 +239,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 fit: StackFit.expand,
                 children: [
                   if (backdrop != null)
-                    Image.network(backdrop, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox())
+                    CachedNetworkImage(
+                      imageUrl: backdrop,
+                      fit: BoxFit.cover,
+                      memCacheWidth: webWide ? 1280 : 780,
+                      fadeInDuration: const Duration(milliseconds: 150),
+                      placeholder: (_, __) => Container(color: AppColors.darkElevated),
+                      errorWidget: (_, __, ___) => const SizedBox(),
+                    )
                   else
                     Container(color: AppColors.darkElevated),
                   Container(
@@ -181,7 +269,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
           // Content Details Body
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 72 + MediaQuery.paddingOf(context).bottom),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -224,7 +312,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       c.canonical.overview,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontFamily: 'Cairo',
                         height: 1.6,
                       ),
@@ -232,10 +320,15 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   const SizedBox(height: 24),
 
                   // Action Buttons
-                  Row(
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    alignment: WrapAlignment.start,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       // Quick Play Button
-                      Expanded(
+                      SizedBox(
+                        width: webWide ? 260 : 220,
                         child: ElevatedButton.icon(
                           onPressed: _handleQuickPlay,
                           style: ElevatedButton.styleFrom(
@@ -251,21 +344,19 @@ class _DetailsScreenState extends State<DetailsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
 
                       // Server Picker
                       OutlinedButton.icon(
                         onPressed: _showSourcePicker,
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                          side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                         ),
                         icon: const Icon(Icons.layers_outlined, size: 20),
                         label: const Text('السيرفرات', style: TextStyle(fontFamily: 'Cairo')),
                       ),
-                      const SizedBox(width: 10),
 
                       // Favorite Button
                       IconButton.filledTonal(
@@ -275,7 +366,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
                           color: isFav ? AppColors.gold400 : Colors.white70,
                         ),
                       ),
-                      const SizedBox(width: 6),
 
                       // Share Button
                       IconButton.filledTonal(
@@ -286,15 +376,250 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   ),
                   const SizedBox(height: 32),
 
+                  if (_loadingDetails)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: LinearProgressIndicator(color: AppColors.gold400),
+                    ),
+                  if (_detailsFailed) ...[
+                    Center(
+                      child: OutlinedButton.icon(
+                        onPressed: _loadDetails,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('تعذر تحميل التفاصيل — إعادة المحاولة'),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  if (_details != null) ...[
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (_details!['runtime'] != null) CustomBadge(child: Text('${_details!['runtime']} دقيقة')),
+                        if (_details!['status'] != null) CustomBadge(child: Text(_details!['status'].toString())),
+                        if (_details!['original_language'] != null) CustomBadge(child: Text(_details!['original_language'].toString().toUpperCase())),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  if (_details != null) ...[
+                    Builder(builder: (context) {
+                      final credits = _details!['credits'] as Map<String, dynamic>?;
+                      final cast = (credits?['cast'] as List<dynamic>?) ?? const [];
+                      if (cast.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('طاقم التمثيل', style: TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
+                          const SizedBox(height:12),
+                          SizedBox(
+                            height:150,
+                            child:ListView.separated(
+                              scrollDirection:Axis.horizontal,
+                              itemCount:cast.take(15).length,
+                              separatorBuilder:(_,__)=>const SizedBox(width:10),
+                              itemBuilder:(context,index){
+                                final person=cast[index] as Map<String,dynamic>;
+                                final profile=person['profile_path'] as String?;
+                                return SizedBox(
+                                  width:90,
+                                  child:Column(children:[
+                                    CircleAvatar(
+                                      radius:38,
+                                      backgroundColor:AppColors.darkElevated,
+                                      backgroundImage:profile==null?null:NetworkImage('https://image.tmdb.org/t/p/w185$profile'),
+                                      child:profile==null?const Icon(Icons.person):null,
+                                    ),
+                                    const SizedBox(height:6),
+                                    Text((person['name']??'').toString(),maxLines:1,overflow:TextOverflow.ellipsis,textAlign:TextAlign.center,style:const TextStyle(fontFamily:'Cairo',fontSize:11)),
+                                    Text((person['character']??'').toString(),maxLines:1,overflow:TextOverflow.ellipsis,textAlign:TextAlign.center,style:const TextStyle(fontFamily:'Cairo',fontSize:9,color:Colors.white54)),
+                                  ]),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height:20),
+                        ],
+                      );
+                    }),
+                    Builder(builder: (context) {
+                      final videos = _details!['videos'] as Map<String,dynamic>?;
+                      final items = (videos?['results'] as List<dynamic>?) ?? const [];
+                      final trailers = items.where((v) => v is Map && v['site']=='YouTube' && (v['type']=='Trailer'||v['type']=='Teaser')).take(6).toList();
+                      if (trailers.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('الإعلانات والمقاطع',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
+                          const SizedBox(height:10),
+                          Wrap(
+                            spacing:8,
+                            runSpacing:8,
+                            children:trailers.map((v)=>Chip(
+                              avatar:const Icon(Icons.play_circle_outline,size:18),
+                              label:Text((v['name']??'Trailer').toString(),overflow:TextOverflow.ellipsis),
+                            )).toList(),
+                          ),
+                          const SizedBox(height:20),
+                        ],
+                      );
+                    }),
+                    Builder(builder: (context) {
+                      final providers = _details!['watch/providers'] as Map<String,dynamic>?;
+                      final results = providers?['results'] as Map<String,dynamic>?;
+                      final sa = results?['SA'] as Map<String,dynamic>?;
+                      final available = <dynamic>[
+                        ...((sa?['flatrate'] as List<dynamic>?)??const []),
+                        ...((sa?['rent'] as List<dynamic>?)??const []),
+                        ...((sa?['buy'] as List<dynamic>?)??const []),
+                      ];
+                      final seen=<int>{};
+                      final unique=available.where((p)=>p is Map<String,dynamic> && seen.add((p['provider_id'] as num?)?.toInt()??-1)).toList();
+                      if(unique.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment:CrossAxisAlignment.start,
+                        children:[
+                          const Text('متاح رسميًا في السعودية',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
+                          const SizedBox(height:10),
+                          Wrap(
+                            spacing:8,
+                            runSpacing:8,
+                            children:unique.map((p)=>CustomBadge(child:Text((p['provider_name']??'').toString()))).toList(),
+                          ),
+                          const SizedBox(height:6),
+                          const Text('بيانات التوفر مقدمة عبر TMDB / JustWatch',style:TextStyle(fontSize:10,color:Colors.white54,fontFamily:'Cairo')),
+                          const SizedBox(height:24),
+                        ],
+                      );
+                    }),
+                  ],
+                  if (_details != null) ...[
+                    Builder(builder:(context){
+                      final images=_details!['images'] as Map<String,dynamic>?;
+                      final backdrops=(images?['backdrops'] as List<dynamic>?)??const [];
+                      if(backdrops.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment:CrossAxisAlignment.start,
+                        children:[
+                          const Text('صور من العمل',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
+                          const SizedBox(height:10),
+                          SizedBox(
+                            height:120,
+                            child:ListView.separated(
+                              scrollDirection:Axis.horizontal,
+                              itemCount:backdrops.take(12).length,
+                              separatorBuilder:(_,__)=>const SizedBox(width:10),
+                              itemBuilder:(context,index){
+                                final path=(backdrops[index] as Map<String,dynamic>)['file_path'] as String?;
+                                if(path==null) return const SizedBox.shrink();
+                                return ClipRRect(
+                                  borderRadius:BorderRadius.circular(10),
+                                  child:AspectRatio(
+                                    aspectRatio:16/9,
+                                    child:Image.network('https://image.tmdb.org/t/p/w780$path',fit:BoxFit.cover),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height:24),
+                        ],
+                      );
+                    }),
+                  ],
+                  if (_recommendations.isNotEmpty) ...[
+                    const Text('قد يعجبك أيضاً', style: TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
+                    const SizedBox(height:12),
+                    SizedBox(
+                      height:210,
+                      child:ListView.separated(
+                        scrollDirection:Axis.horizontal,
+                        itemCount:_recommendations.take(12).length,
+                        separatorBuilder:(_,__)=>const SizedBox(width:10),
+                        itemBuilder:(context,index){
+                          final item=_recommendations[index];
+                          final poster=item.canonical.posterPath;
+                          return SizedBox(
+                            width:130,
+                            child:InkWell(
+                              onTap:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>DetailsScreen(content:item,onBack:()=>Navigator.of(context).pop(),onPlay:widget.onPlay))),
+                              child:Column(children:[
+                                Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(10),child:poster==null?Container(color:AppColors.darkElevated):Image.network('https://image.tmdb.org/t/p/w342$poster',fit:BoxFit.cover))),
+                                const SizedBox(height:6),
+                                Text(item.canonical.title,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontFamily:'Cairo',fontSize:12)),
+                              ]),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height:24),
+                  ],
+                  if (_similar.isNotEmpty) ...[
+                    const Text('أعمال مشابهة', style: TextStyle(fontSize:18,fontWeight:FontWeight.bold,fontFamily:'Cairo')),
+                    const SizedBox(height:12),
+                    SizedBox(
+                      height:210,
+                      child:ListView.separated(
+                        scrollDirection:Axis.horizontal,
+                        itemCount:_similar.take(12).length,
+                        separatorBuilder:(_,__)=>const SizedBox(width:10),
+                        itemBuilder:(context,index){
+                          final item=_similar[index];
+                          final poster=item.canonical.posterPath;
+                          return SizedBox(
+                            width:130,
+                            child:InkWell(
+                              onTap:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>DetailsScreen(content:item,onBack:()=>Navigator.of(context).pop(),onPlay:widget.onPlay))),
+                              child:Column(children:[
+                                Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(10),child:poster==null?Container(color:AppColors.darkElevated):Image.network('https://image.tmdb.org/t/p/w342$poster',fit:BoxFit.cover))),
+                                const SizedBox(height:6),
+                                Text(item.canonical.title,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontFamily:'Cairo',fontSize:12)),
+                              ]),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height:24),
+                  ],
                   // Series Episodes Section
                   if (c.mediaType == 'series') ...[
                     const Text(
                       'الحلقات والمواسم',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
                     ),
+                    SizedBox(
+                      height: 44,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _seasons.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) {
+                          final season = _seasons[index];
+                          return ChoiceChip(
+                            label: Text('الموسم $season'),
+                            selected: _selectedSeason == season,
+                            onSelected: (_) {
+                              setState(() => _selectedSeason = season);
+                              _loadSeason(season);
+                            },
+                          );
+                        },
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     if (_loadingEpisodes)
                       const Center(child: CircularProgressIndicator(color: AppColors.gold400))
+                    else if (_episodesFailed)
+                      Center(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _loadSeason(_selectedSeason),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('تعذر تحميل حلقات هذا الموسم — إعادة المحاولة'),
+                        ),
+                      )
                     else
                       ListView.separated(
                         shrinkWrap: true,
@@ -305,7 +630,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                           final ep = _episodes[idx];
                           final isCurrent = _selectedEpisode?.episodeNumber == ep.episodeNumber;
                           return ListTile(
-                            tileColor: isCurrent ? AppColors.gold400.withOpacity(0.12) : AppColors.darkElevated,
+                            tileColor: isCurrent ? AppColors.gold400.withValues(alpha: 0.12) : AppColors.darkElevated,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                               side: BorderSide(color: isCurrent ? AppColors.gold400 : Colors.transparent),
@@ -337,6 +662,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../data/repositories/progress_repository.dart';
 import 'package:video_player/video_player.dart';
 import '../../domain/models/content_identity.dart';
 import '../../domain/models/playback_source.dart';
 import '../../data/services/proxy_service.dart';
+import '../../data/scrapers/server_manager.dart';
 import '../../core/theme/app_theme.dart';
-import '../widgets/custom_badge.dart';
 
 class PlayerScreen extends StatefulWidget {
   final ContentIdentity identity;
@@ -35,20 +36,30 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _hasError = false;
   bool _useProxy = false;
   double _playbackSpeed = 1.0;
-  bool _showControls = true;
+  bool _restoredProgress = false;
+  int _playerRequestSerial = 0;
+  late ProgressRepository _progressRepository;
 
   final List<double> _speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
 
   @override
   void initState() {
     super.initState();
+    _progressRepository=context.read<ProgressRepository>();
+    _playbackSpeed=_progressRepository.defaultPlaybackSpeed;
     _currentSource = widget.source;
     _currentServerIdx = widget.allSources.indexWhere((s) => s.source.sourceId == widget.source.sourceId);
     if (_currentServerIdx < 0) _currentServerIdx = 0;
     _initPlayer(_currentSource.url);
   }
 
+  bool _isDirectMediaUrl(String url) {
+    final u = url.toLowerCase().split('?').first;
+    return u.endsWith('.m3u8') || u.endsWith('.mp4') || u.endsWith('.webm') || u.endsWith('.mov');
+  }
+
   Future<void> _initPlayer(String streamUrl) async {
+    final serial = ++_playerRequestSerial;
     setState(() {
       _isLoading = true;
       _hasError = false;
@@ -57,8 +68,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
     await _controller?.dispose();
     _controller = null;
 
+    if (!_isDirectMediaUrl(streamUrl)) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      }
+      return;
+    }
+
     final effectiveUrl = _useProxy ? ProxyService().getProxiedStreamUrl(streamUrl) : streamUrl;
 
+    final stopwatch = Stopwatch()..start();
     try {
       final controller = VideoPlayerController.networkUrl(
         Uri.parse(effectiveUrl),
@@ -66,9 +88,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
       );
 
       _controller = controller;
-      await controller.initialize();
+      await controller.initialize().timeout(const Duration(seconds: 12));
+      if (!mounted || serial != _playerRequestSerial) {
+        await controller.dispose();
+        return;
+      }
       await controller.setPlaybackSpeed(_playbackSpeed);
-      await controller.play();
+      if (!_restoredProgress && mounted && _progressRepository.resumePlayback) {
+        final saved = _progressRepository.getProgress(widget.identity.tmdbId);
+        if (saved > 5 && saved < controller.value.duration.inSeconds - 15) {
+          await controller.seekTo(Duration(seconds: saved.round()));
+        }
+        _restoredProgress = true;
+      }
+      if(_progressRepository.autoplay) await controller.play();
+      stopwatch.stop();
+      ServerManager.recordPlayback(_currentSource.providerId, success: true, latencyMs: stopwatch.elapsedMilliseconds);
 
       if (mounted) {
         setState(() {
@@ -76,6 +111,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
         });
       }
     } catch (e) {
+      stopwatch.stop();
+      if (serial != _playerRequestSerial) return;
+      ServerManager.recordPlayback(_currentSource.providerId, success: false, latencyMs: stopwatch.elapsedMilliseconds);
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -109,15 +147,24 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _showServerSwitcher() {
+    if (widget.allSources.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا توجد سيرفرات متاحة حالياً')),
+      );
+      return;
+    }
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppColors.darkElevated,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.72,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
             children: [
               const Text(
                 'قائمة السيرفرات العالمية',
@@ -135,7 +182,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     final pingLabel = idx < 5 ? 'سريع جداً' : (idx < 15 ? 'مستقر' : 'احتياطي');
 
                     return ListTile(
-                      tileColor: isCurrent ? AppColors.gold400.withOpacity(0.15) : Colors.white.withOpacity(0.04),
+                      tileColor: isCurrent ? AppColors.gold400.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.04),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       title: Text(
                         rs.source.providerId,
@@ -162,6 +209,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 ),
               ),
             ],
+              ),
+            ),
           ),
         );
       },
@@ -170,6 +219,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    _playerRequestSerial++;
+    final controller=_controller;
+    if(controller!=null&&controller.value.isInitialized){
+      final p=controller.value.position.inMilliseconds/1000;
+      final d=controller.value.duration.inMilliseconds/1000;
+      _progressRepository.saveProgress(widget.identity.tmdbId,p,d);
+    }
     _controller?.dispose();
     super.dispose();
   }
@@ -212,27 +268,28 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 54),
                   const SizedBox(height: 16),
                   const Text(
-                    'تعذر تحميل البث المباشر من هذا السيرفر',
+                    'تعذر تشغيل هذا المصدر',
                     style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'قد يفرض السيرفر حظر CORS أو ترويسات مشفرة. يمكنك تشغيل وسيط الترحيل أو التبديل للسيرفر التالي.',
+                    'هذا المصدر ليس رابط فيديو مباشرًا أو تعذر تشغيله. اختر مصدرًا مباشرًا صالحًا أو جرّب مصدرًا آخر.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'Cairo'),
                   ),
                   const SizedBox(height: 24),
                   Wrap(
                     spacing: 12,
+                    runSpacing: 12,
                     children: [
                       ElevatedButton.icon(
-                        onPressed: _retryWithProxy,
+                        onPressed: _isDirectMediaUrl(_currentSource.url) ? _retryWithProxy : null,
                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold400, foregroundColor: Colors.black),
                         icon: const Icon(Icons.flash_on),
                         label: const Text('تشغيل عبر البروكسي (Proxy Relay)', style: TextStyle(fontFamily: 'Cairo')),
                       ),
                       OutlinedButton.icon(
-                        onPressed: () => _switchServer((_currentServerIdx + 1) % widget.allSources.length),
+                        onPressed: widget.allSources.isEmpty ? null : () => _switchServer((_currentServerIdx + 1) % widget.allSources.length),
                         style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
                         icon: const Icon(Icons.skip_next),
                         label: const Text('السيرفر التالي', style: TextStyle(fontFamily: 'Cairo')),
@@ -340,6 +397,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
+                    ValueListenableBuilder<VideoPlayerValue>(
+                      valueListenable:_controller!,
+                      builder:(context,value,_){
+                        String fmt(Duration d){
+                          final h=d.inHours;
+                          final m=d.inMinutes.remainder(60).toString().padLeft(2,'0');
+                          final s=d.inSeconds.remainder(60).toString().padLeft(2,'0');
+                          return h>0?'$h:$m:$s':'$m:$s';
+                        }
+                        return Text('${fmt(value.position)} / ${fmt(value.duration)}',style:const TextStyle(color:Colors.white70,fontSize:11));
+                      },
+                    ),
+                    const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(Icons.fullscreen, color: Colors.white),
                       onPressed: () {

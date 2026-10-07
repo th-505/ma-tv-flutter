@@ -17,6 +17,7 @@ dependencies:
 
   # Networking & HTTP
   http: ^1.2.1
+  cached_network_image: ^3.4.0
 
   # Video Playback (Web, Android, iOS, Android TV)
   video_player: ^2.8.5
@@ -25,7 +26,7 @@ dependencies:
   shared_preferences: ^2.2.3
 
   # Localization & RTL
-  intl: ^0.19.0
+  intl: ^0.20.3
 
   # Native Device Utilities
   url_launcher: ^6.2.5
@@ -38,5 +39,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/

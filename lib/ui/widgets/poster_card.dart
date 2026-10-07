@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/models/content_identity.dart';
 import '../../core/tv/tv_remote_focus.dart';
 import '../../core/theme/app_theme.dart';
 import 'custom_badge.dart';
 
-class PosterCard extends StatelessWidget {
+class PosterCard extends StatefulWidget {
   final ContentIdentity identity;
   final VoidCallback onTap;
   final double width;
@@ -19,20 +20,43 @@ class PosterCard extends StatelessWidget {
   });
 
   @override
+  State<PosterCard> createState() => _PosterCardState();
+}
+
+class _PosterCardState extends State<PosterCard> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    final posterUrl = identity.canonical.posterPath != null
-        ? 'https://image.tmdb.org/t/p/w500${identity.canonical.posterPath}'
+    final posterUrl = widget.identity.canonical.posterPath != null
+        ? 'https://image.tmdb.org/t/p/w500${widget.identity.canonical.posterPath}'
         : null;
 
-    return TvFocusableWidget(
-      onSelect: onTap,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedScale(
+        scale: _hovered ? 1.045 : 1,
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
+        child: TvFocusableWidget(
+      onSelect: widget.onTap,
       borderRadius: BorderRadius.circular(10),
-      child: Container(
-        width: width,
-        height: height,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        width: widget.width,
+        height: widget.height,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           color: AppColors.darkElevated,
+          border: Border.all(
+            color: _hovered ? AppColors.gold400.withValues(alpha: 0.75) : Colors.transparent,
+            width: 1.2,
+          ),
+          boxShadow: _hovered
+              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.55), blurRadius: 20, offset: const Offset(0, 8))]
+              : null,
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -40,22 +64,18 @@ class PosterCard extends StatelessWidget {
           children: [
             // Poster Image
             if (posterUrl != null)
-              Image.network(
-                posterUrl,
+              CachedNetworkImage(
+                imageUrl: posterUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildFallback(),
-                loadingBuilder: (_, child, progress) {
-                  if (progress == null) return child;
-                  return Container(
-                    color: AppColors.darkElevated,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.gold400,
-                      ),
-                    ),
-                  );
-                },
+                memCacheWidth: (widget.width * MediaQuery.devicePixelRatioOf(context)).round().clamp(160, 500),
+                fadeInDuration: const Duration(milliseconds: 120),
+                placeholder: (_, __) => Container(
+                  color: AppColors.darkElevated,
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold400),
+                  ),
+                ),
+                errorWidget: (_, __, ___) => _buildFallback(),
               )
             else
               _buildFallback(),
@@ -81,7 +101,7 @@ class PosterCard extends StatelessWidget {
             ),
 
             // Vote Average Badge
-            if (identity.canonical.voteAverage != null && identity.canonical.voteAverage! > 0)
+            if (widget.identity.canonical.voteAverage != null && widget.identity.canonical.voteAverage! > 0)
               Positioned(
                 top: 8,
                 left: 8,
@@ -92,7 +112,7 @@ class PosterCard extends StatelessWidget {
                     children: [
                       const Icon(Icons.star, size: 10, color: AppColors.gold400),
                       const SizedBox(width: 3),
-                      Text(identity.canonical.voteAverage!.toStringAsFixed(1)),
+                      Text(widget.identity.canonical.voteAverage!.toStringAsFixed(1)),
                     ],
                   ),
                 ),
@@ -104,7 +124,7 @@ class PosterCard extends StatelessWidget {
               left: 8,
               right: 8,
               child: Text(
-                identity.canonical.title,
+                widget.identity.canonical.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -117,6 +137,8 @@ class PosterCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
         ),
       ),
     );
@@ -134,7 +156,7 @@ class PosterCard extends StatelessWidget {
               const Icon(Icons.movie, color: AppColors.gold400, size: 30),
               const SizedBox(height: 6),
               Text(
-                identity.canonical.title,
+                widget.identity.canonical.title,
                 maxLines: 2,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white70, fontSize: 11, fontFamily: 'Cairo'),

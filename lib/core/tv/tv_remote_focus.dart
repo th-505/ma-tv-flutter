@@ -59,7 +59,7 @@ class _TvFocusableWidgetState extends State<TvFocusableWidget> {
               boxShadow: _isFocused
                   ? [
                       BoxShadow(
-                        color: AppColors.gold400.withOpacity(0.35),
+                        color: AppColors.gold400.withValues(alpha: 0.35),
                         blurRadius: 15,
                         spreadRadius: 2,
                       )

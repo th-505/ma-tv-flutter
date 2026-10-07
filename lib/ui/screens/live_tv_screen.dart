@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/models/live_channel.dart';
+import '../../domain/models/live_types.dart';
 import '../../data/repositories/progress_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../widgets/custom_badge.dart';
 import '../../core/tv/tv_remote_focus.dart';
 
 class LiveTvScreen extends StatefulWidget {
-  final void Function(String name, String url) onPlayLive;
+  final void Function(String name, List<LiveSourceModel> sources) onPlayLive;
 
   const LiveTvScreen({
     super.key,
@@ -22,6 +23,7 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
   String _selectedCountry = 'all';
   String _selectedCategory = 'all';
   String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   final List<Map<String, String>> _countries = [
     {'code': 'all', 'name': 'الكل', 'flag': '🌐'},
@@ -65,11 +67,39 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
     LiveChannel(id: 'ae-dubaitv', name: 'تلفزيون دبي', country: 'ae', category: 'entertainment', url: 'https://dmitv.cdn.mangomolo.com/dubaitv/smil:dubaitv.smil/playlist.m3u8'),
   ];
 
+  LiveChannelModel _asModel(LiveChannel c) => LiveChannelModel(
+    channelId:c.id,
+    name:c.name,
+    logo:c.logo,
+    country:c.country,
+    category:c.category,
+    sources:[
+      LiveSourceModel(
+        providerId:'official-live',
+        sourceId:'${c.id}-primary',
+        url:c.url,
+        quality:'auto',
+        health:'HEALTHY',
+      ),
+    ],
+  );
+
+  void _playBest(LiveChannel channel) {
+    final source=_asModel(channel).bestSource;
+    if(source!=null) widget.onPlayLive(channel.name,_asModel(channel).playableSources);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final progress = context.watch<ProgressRepository>();
 
-    final filtered = _channels.filter((c) {
+    final filtered = _channels.where((c) {
       if (_selectedCategory == 'favorites') {
         if (!progress.isFavChannel(c.id)) return false;
       } else if (_selectedCategory != 'all' && c.category != _selectedCategory) {
@@ -93,10 +123,20 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: TextField(
+              controller: _searchController,
               onChanged: (v) => setState(() => _searchQuery = v),
+              textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: 'ابحث عن قناة...',
                 prefixIcon: const Icon(Icons.search, color: Colors.white60),
+                suffixIcon: _searchQuery.isEmpty ? null : IconButton(
+                  tooltip: 'مسح البحث',
+                  icon: const Icon(Icons.close, color: Colors.white60),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                ),
                 filled: true,
                 fillColor: AppColors.darkElevated,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
@@ -147,7 +187,7 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
                 return FilterChip(
                   label: Text(cat['label']!),
                   selected: isSelected,
-                  selectedColor: AppColors.gold400.withOpacity(0.2),
+                  selectedColor: AppColors.gold400.withValues(alpha: 0.2),
                   checkmarkColor: AppColors.gold400,
                   backgroundColor: Colors.transparent,
                   labelStyle: TextStyle(
@@ -160,7 +200,18 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
               },
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                '\${filtered.length} قناة',
+                style: const TextStyle(color: Colors.white54, fontSize: 11, fontFamily: 'Cairo'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
 
           // Channels Grid
           Expanded(
@@ -170,19 +221,21 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
                   )
                 : GridView.builder(
                     padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 220,
-                      childAspectRatio: 1.4,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: MediaQuery.sizeOf(context).width >= 900 ? 280 : 220,
+                      childAspectRatio: MediaQuery.sizeOf(context).width >= 900 ? 1.65 : 1.4,
+                      crossAxisSpacing: MediaQuery.sizeOf(context).width >= 900 ? 18 : 12,
+                      mainAxisSpacing: MediaQuery.sizeOf(context).width >= 900 ? 18 : 12,
                     ),
                     itemCount: filtered.length,
                     itemBuilder: (context, idx) {
                       final ch = filtered[idx];
                       final isFav = progress.isFavChannel(ch.id);
+                      final liveModel = _asModel(ch);
+                      final best = liveModel.bestSource;
 
                       return TvFocusableWidget(
-                        onSelect: () => widget.onPlayLive(ch.name, ch.url),
+                        onSelect: () => _playBest(ch),
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -207,7 +260,14 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                   ),
-                                  const CustomBadge(isGold: true, child: Text('مباشر')),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if(best!=null) CustomBadge(child: Text(best.quality.toUpperCase())),
+                                      const SizedBox(width:6),
+                                      CustomBadge(isGold: best!=null, child: Text(best==null?'غير متاح':'مباشر')),
+                                    ],
+                                  ),
                                 ],
                               ),
                               Text(
@@ -216,10 +276,16 @@ class _LiveTvScreenState extends State<LiveTvScreen> {
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'Cairo'),
                               ),
-                              const Row(
+                              Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  Icon(Icons.play_circle_fill, color: AppColors.gold400, size: 22),
+                                  if(best!=null) ...[
+                                    Container(width:7,height:7,decoration:const BoxDecoration(shape:BoxShape.circle,color:AppColors.success)),
+                                    const SizedBox(width:6),
+                                    Text(best.health,style:const TextStyle(fontSize:9,color:Colors.white54)),
+                                    const SizedBox(width:8),
+                                  ],
+                                  Icon(best==null?Icons.block:Icons.play_circle_fill, color:best==null?Colors.white24:AppColors.gold400, size:22),
                                 ],
                               ),
                             ],

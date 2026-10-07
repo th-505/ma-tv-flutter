@@ -1,12 +1,17 @@
-name: Build & Deploy MA-TV (Web to GitHub Pages, Android APK/TV, and iOS)
+name: MA-TV Web Beta
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, parity-rebuild-1 ]
   workflow_dispatch:
+
+concurrency:
+  group: ma-tv-web-beta
+  cancel-in-progress: true
 
 permissions:
   contents: write
+  pages: write
 
 jobs:
   build-and-deploy-web:
@@ -14,10 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -25,91 +30,112 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.x'
+          flutter-version: '3.47.x'
           channel: 'stable'
           cache: true
 
+
       - name: Install Dependencies
-        working-directory: matv_flutter
         run: flutter pub get
 
+      - name: Analyze Dart
+        run: flutter analyze lib test/playback_engines_test.dart
+
+      - name: Run Tests
+        run: flutter test test/playback_engines_test.dart
+
       - name: Build Web Application
-        working-directory: matv_flutter
-        run: flutter build web --release --base-href "/MA-TV/"
+        run: flutter build web --release --target lib/main.dart --base-href "/ma-tv-flutter/" --tree-shake-icons
+
+      - name: Cache Bust Flutter Web Assets
+        env:
+          BUILD_ID: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          build_id = os.environ["BUILD_ID"]
+          index = Path("build/web/index.html")
+          bootstrap = Path("build/web/flutter_bootstrap.js")
+          index_text = index.read_text()
+          index_text = index_text.replace('flutter_bootstrap.js"', f'flutter_bootstrap.js?v={build_id}"')
+          index.write_text(index_text)
+          bootstrap_text = bootstrap.read_text()
+          bootstrap_text = bootstrap_text.replace('"mainJsPath":"main.dart.js"', f'"mainJsPath":"main.dart.js?v={build_id}"')
+          bootstrap.write_text(bootstrap_text)
+          Path("build/web/deploy-version.txt").write_text(build_id + "\n")
+          PY
+
+      - name: Browser Smoke Test
+        run: |
+          mkdir -p /tmp/matv-site/ma-tv-flutter
+          cp -R build/web/. /tmp/matv-site/ma-tv-flutter/
+          python3 -m http.server 8080 --directory /tmp/matv-site >/tmp/matv-http.log 2>&1 &
+          sleep 2
+          google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=1280,720 --virtual-time-budget=15000 --screenshot=web-smoke.png http://127.0.0.1:8080/ma-tv-flutter/
+          test -s web-smoke.png
+
+      - name: Upload Browser Smoke Screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-smoke
+          path: web-smoke.png
+          retention-days: 3
 
       - name: Deploy to GitHub Pages (gh-pages)
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: matv_flutter/build/web
+          publish_dir: build/web
           publish_branch: gh-pages
 
-  build-android:
-    name: Build Android Phone & TV APK
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.22.x'
-          channel: 'stable'
-          cache: true
-
-      - name: Install Dependencies
-        working-directory: matv_flutter
-        run: flutter pub get
-
-      - name: Build Android APK
-        working-directory: matv_flutter
-        run: flutter build apk --release
-
-      - name: Upload Android APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MA-TV-Release-APK
-          path: matv_flutter/build/app/outputs/flutter-apk/app-release.apk
-
-  build-ios:
-    name: Build iOS IPA Bundle
-    runs-on: macos-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.22.x'
-          channel: 'stable'
-          cache: true
-
-      - name: Install Dependencies
-        working-directory: matv_flutter
-        run: flutter pub get
-
-      - name: Build iOS No-Codesign
-        working-directory: matv_flutter
-        run: flutter build ios --release --no-codesign
-
-      - name: Package Payload to IPA
-        working-directory: matv_flutter
+      - name: Trigger GitHub Pages Build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p build/ios/iphoneos/Payload
-          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
-          cd build/ios/iphoneos
-          zip -r MA-TV-Unsigned.ipa Payload
+          curl --fail-with-body -L -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "https://api.github.com/repos/${{ github.repository }}/pages/builds"
 
-      - name: Upload iOS IPA Artifact
+      - name: Wait for Public GitHub Pages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          owner_repo = os.environ["GITHUB_REPOSITORY"]
+          token = os.environ["GH_TOKEN"]
+          owner, repo = owner_repo.split("/", 1)
+          marker = f"https://{owner}.github.io/{repo}/deploy-version.txt?run={os.environ['GITHUB_RUN_ID']}"
+          for attempt in range(48):
+              try:
+                  req = urllib.request.Request(marker, headers={"Cache-Control": "no-cache"})
+                  with urllib.request.urlopen(req, timeout=15) as response:
+                      deployed = response.read().decode().strip()
+                  print(f"Public marker: {deployed} (attempt {attempt + 1}/48)")
+                  if deployed == os.environ["EXPECTED_SHA"]:
+                      break
+              except Exception as exc:
+                  print(f"Waiting for public marker: {exc}")
+              time.sleep(5)
+          else:
+              raise SystemExit("Timed out waiting for exact deployed commit")
+          PY
+
+      - name: Verify Public GitHub Pages
+        run: |
+          google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=1280,720 --virtual-time-budget=15000 \
+            --screenshot=pages-live-smoke.png \
+            "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/?ci=${{ github.sha }}"
+          test -s pages-live-smoke.png
+
+      - name: Upload Public Pages Screenshot
         uses: actions/upload-artifact@v4
         with:
-          name: MA-TV-Release-IPA
-          path: matv_flutter/build/ios/iphoneos/MA-TV-Unsigned.ipa
+          name: pages-live-smoke
+          path: pages-live-smoke.png
+          retention-days: 3
+
