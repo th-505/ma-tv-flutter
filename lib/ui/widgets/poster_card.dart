@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import '../../domain/models/content_identity.dart';
 import '../../core/tv/tv_remote_focus.dart';
 import '../../core/theme/app_theme.dart';
@@ -64,20 +65,24 @@ class _PosterCardState extends State<PosterCard> {
           children: [
             // Poster Image
             if (posterUrl != null)
-              CachedNetworkImage(
-                imageUrl: posterUrl,
-                fit: BoxFit.cover,
-                // The card is at most ~135 logical px wide. Capping decoded posters
-                // below TMDB's 500px source reduces browser decode/GPU memory while
-                // retaining enough pixels for high-DPI displays.
-                memCacheWidth: (widget.width * MediaQuery.devicePixelRatioOf(context)).round().clamp(160, 360),
-                fadeInDuration: Duration.zero,
-                useOldImageOnUrlChange: true,
-                placeholder: (_, __) => const ColoredBox(
-                  color: AppColors.darkElevated,
-                ),
-                errorWidget: (_, __, ___) => _buildFallback(),
-              )
+              kIsWeb
+                  ? Image.network(
+                      posterUrl,
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.low,
+                      errorBuilder: (_, __, ___) => _buildFallback(),
+                      loadingBuilder: (context, child, progress) =>
+                          progress == null ? child : const ColoredBox(color: AppColors.darkElevated),
+                    )
+                  : CachedNetworkImage(
+                      imageUrl: posterUrl,
+                      fit: BoxFit.cover,
+                      memCacheWidth: (widget.width * MediaQuery.devicePixelRatioOf(context)).round().clamp(160, 360),
+                      fadeInDuration: Duration.zero,
+                      useOldImageOnUrlChange: true,
+                      placeholder: (_, __) => const ColoredBox(color: AppColors.darkElevated),
+                      errorWidget: (_, __, ___) => _buildFallback(),
+                    )
             else
               _buildFallback(),
 
