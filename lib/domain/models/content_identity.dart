@@ -76,9 +76,15 @@ class ContentIdentity {
   });
 
   factory ContentIdentity.fromJson(Map<String, dynamic> json) {
+    final rawMediaType = json['media_type']?.toString();
+    final normalizedMediaType = rawMediaType == 'tv'
+        ? 'series'
+        : (rawMediaType == 'movie'
+            ? 'movie'
+            : (json['first_air_date'] != null ? 'series' : 'movie'));
     return ContentIdentity(
       tmdbId: json['id'] ?? 0,
-      mediaType: json['media_type'] ?? (json['first_air_date'] != null ? 'series' : 'movie'),
+      mediaType: normalizedMediaType,
       canonical: CanonicalData.fromJson(json),
       imdbId: json['imdb_id'],
     );
