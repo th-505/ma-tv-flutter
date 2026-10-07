@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/repositories/progress_repository.dart';
 import 'package:video_player/video_player.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../domain/models/content_identity.dart';
 import '../../domain/models/playback_source.dart';
 import '../../data/services/proxy_service.dart';
@@ -50,7 +51,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _currentSource = widget.source;
     _currentServerIdx = widget.allSources.indexWhere((s) => s.source.sourceId == widget.source.sourceId);
     if (_currentServerIdx < 0) _currentServerIdx = 0;
-    _initPlayer(_currentSource.url);
+    if (_currentSource.kind == PlaybackSourceKind.directMedia) {
+      _initPlayer(_currentSource.url);
+    } else {
+      _isLoading = false;
+      _hasError = true;
+    }
   }
 
   bool _isDirectMediaUrl(String url) {
@@ -131,6 +137,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
         _useProxy = false;
       });
       _initPlayer(_currentSource.url);
+    }
+  }
+
+  Future<void> _openEmbedSource() async {
+    final uri = Uri.tryParse(_currentSource.embedUrl ?? _currentSource.url);
+    if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر فتح صفحة السيرفر')),
+      );
     }
   }
 
@@ -272,10 +288,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'هذا المصدر ليس رابط فيديو مباشرًا أو تعذر تشغيله. اختر مصدرًا مباشرًا صالحًا أو جرّب مصدرًا آخر.',
+                  Text(
+                    _currentSource.kind == PlaybackSourceKind.embedPage
+                        ? 'هذا السيرفر صفحة مشاهدة خارجية وليس ملف فيديو مباشرًا. افتح صفحة السيرفر، أو اختر مصدرًا مباشرًا عند توفره.'
+                        : 'تعذر تشغيل رابط الفيديو المباشر. جرّب إعادة التشغيل عبر Relay أو اختر مصدرًا آخر.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'Cairo'),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'Cairo'),
                   ),
                   const SizedBox(height: 24),
                   Wrap(
@@ -283,10 +301,17 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     runSpacing: 12,
                     children: [
                       ElevatedButton.icon(
-                        onPressed: _isDirectMediaUrl(_currentSource.url) ? _retryWithProxy : null,
+                        onPressed: _currentSource.kind == PlaybackSourceKind.embedPage
+                            ? _openEmbedSource
+                            : (_isDirectMediaUrl(_currentSource.url) ? _retryWithProxy : null),
                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold400, foregroundColor: Colors.black),
-                        icon: const Icon(Icons.flash_on),
-                        label: const Text('تشغيل عبر البروكسي (Proxy Relay)', style: TextStyle(fontFamily: 'Cairo')),
+                        icon: Icon(_currentSource.kind == PlaybackSourceKind.embedPage ? Icons.open_in_new : Icons.flash_on),
+                        label: Text(
+                          _currentSource.kind == PlaybackSourceKind.embedPage
+                              ? 'فتح صفحة السيرفر'
+                              : 'تشغيل عبر البروكسي (Proxy Relay)',
+                          style: const TextStyle(fontFamily: 'Cairo'),
+                        ),
                       ),
                       OutlinedButton.icon(
                         onPressed: widget.allSources.isEmpty ? null : () => _switchServer((_currentServerIdx + 1) % widget.allSources.length),
