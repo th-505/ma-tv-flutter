@@ -169,6 +169,7 @@ class ServerManager {
         quality: '1080p',
         embedUrl: url,
         qualityConfidence: QualityConfidence.providerDeclared,
+        kind: PlaybackSourceKind.embedPage,
       );
     }).toList();
 
