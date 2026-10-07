@@ -1,5 +1,7 @@
 enum QualityConfidence { unverified, providerDeclared, manifestVerified, trackVerified }
 
+enum PlaybackSourceKind { directMedia, embedPage }
+
 class PlaybackSource {
   final String providerId;
   final String sourceId;
@@ -10,6 +12,7 @@ class PlaybackSource {
   final String? embedUrl;
   final Map<String, String>? headers;
   final QualityConfidence qualityConfidence;
+  final PlaybackSourceKind kind;
 
   PlaybackSource({
     required this.providerId,
@@ -21,6 +24,7 @@ class PlaybackSource {
     this.embedUrl,
     this.headers,
     this.qualityConfidence = QualityConfidence.providerDeclared,
+    this.kind = PlaybackSourceKind.directMedia,
   });
 }
 
