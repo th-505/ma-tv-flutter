@@ -41,7 +41,8 @@ class HeroBanner extends StatelessWidget {
               imageUrl: backdrop,
               fit: BoxFit.cover,
               memCacheWidth: desktop ? 1280 : 780,
-              fadeInDuration: const Duration(milliseconds: 150),
+              fadeInDuration: const Duration(milliseconds: 100),
+              useOldImageOnUrlChange: true,
               placeholder: (_, __) => Container(color: AppColors.darkElevated),
               errorWidget: (_, __, ___) => Container(color: AppColors.darkElevated),
             )

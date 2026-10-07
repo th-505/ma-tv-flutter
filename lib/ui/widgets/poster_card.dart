@@ -29,7 +29,7 @@ class _PosterCardState extends State<PosterCard> {
   @override
   Widget build(BuildContext context) {
     final posterUrl = widget.identity.canonical.posterPath != null
-        ? 'https://image.tmdb.org/t/p/w500${widget.identity.canonical.posterPath}'
+        ? 'https://image.tmdb.org/t/p/w342${widget.identity.canonical.posterPath}'
         : null;
 
     return MouseRegion(
@@ -67,13 +67,14 @@ class _PosterCardState extends State<PosterCard> {
               CachedNetworkImage(
                 imageUrl: posterUrl,
                 fit: BoxFit.cover,
-                memCacheWidth: (widget.width * MediaQuery.devicePixelRatioOf(context)).round().clamp(160, 500),
-                fadeInDuration: const Duration(milliseconds: 120),
-                placeholder: (_, __) => Container(
+                // The card is at most ~135 logical px wide. Capping decoded posters
+                // alongside TMDB's smaller w342 source reduces transfer/decode/GPU memory while
+                // retaining enough pixels for high-DPI displays.
+                memCacheWidth: (widget.width * MediaQuery.devicePixelRatioOf(context)).round().clamp(160, 360),
+                fadeInDuration: Duration.zero,
+                useOldImageOnUrlChange: true,
+                placeholder: (_, __) => const ColoredBox(
                   color: AppColors.darkElevated,
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold400),
-                  ),
                 ),
                 errorWidget: (_, __, ___) => _buildFallback(),
               )
