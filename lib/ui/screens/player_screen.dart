@@ -136,7 +136,17 @@ class _PlayerScreenState extends State<PlayerScreen> {
         _currentSource = widget.allSources[idx].source;
         _useProxy = false;
       });
-      _initPlayer(_currentSource.url);
+      if (_currentSource.kind == PlaybackSourceKind.directMedia) {
+        _initPlayer(_currentSource.url);
+      } else {
+        _playerRequestSerial++;
+        _controller?.dispose();
+        _controller = null;
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      }
     }
   }
 
