@@ -2,7 +2,7 @@ name: MA-TV Web Beta
 
 on:
   push:
-    branches: [ main, parity-rebuild-1, web-performance-next, integration/full-platform-ci ]
+    branches: [ main, parity-rebuild-1, web-performance-next, integration/full-platform-ci, fix/runtime-safari-playback ]
   workflow_dispatch:
 
 concurrency:
