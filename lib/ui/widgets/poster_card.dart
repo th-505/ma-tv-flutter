@@ -67,13 +67,14 @@ class _PosterCardState extends State<PosterCard> {
               CachedNetworkImage(
                 imageUrl: posterUrl,
                 fit: BoxFit.cover,
-                memCacheWidth: (widget.width * MediaQuery.devicePixelRatioOf(context)).round().clamp(160, 500),
-                fadeInDuration: const Duration(milliseconds: 120),
-                placeholder: (_, __) => Container(
+                // The card is at most ~135 logical px wide. Capping decoded posters
+                // below TMDB's 500px source reduces browser decode/GPU memory while
+                // retaining enough pixels for high-DPI displays.
+                memCacheWidth: (widget.width * MediaQuery.devicePixelRatioOf(context)).round().clamp(160, 360),
+                fadeInDuration: Duration.zero,
+                useOldImageOnUrlChange: true,
+                placeholder: (_, __) => const ColoredBox(
                   color: AppColors.darkElevated,
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold400),
-                  ),
                 ),
                 errorWidget: (_, __, ___) => _buildFallback(),
               )
